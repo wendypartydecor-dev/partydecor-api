@@ -744,7 +744,7 @@ function poblarSelect(id, lista, defVal){
 }
 
 /* ══ EVENTOS ════════════════════════════ */
-function recibirEventos(ev){S.eventos=ev||[];S.eventosFilt=[...S.eventos];llenarSel(S.eventosFilt);}
+function recibirEventos(ev){S.eventos=(ev||[]).map(e=>Object.assign(e,{cliente:e.cliente||e.cli||"—",fecha:e.fecha||(e.f_ev?new Date(e.f_ev+"T12:00:00").toLocaleDateString("es-MX"):"—"),fecha_iso:e.fecha_iso||e.f_ev||""}));S.eventosFilt=[...S.eventos];llenarSel(S.eventosFilt);}
 function llenarSel(lista){
   const sel=document.getElementById('evSelect'),val=sel.value;
   sel.innerHTML='<option value="">— Seleccionar —</option>';
