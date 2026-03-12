@@ -650,8 +650,27 @@ const S={
   listas:{tiposCliente:[],fuentesCliente:[],tiposEvento:[],estadosEvento:[],estadosPago:[]},
   eventoActual:null,itemSel:null,cliSel:null,
   cliDesbloq:false,guardando:false,tabActiva:'sel',
-  ddIdx:-1,pinBuf:'',pwdBuf:''
+  ddIdx:-1,pinBuf:'',pwdBuf:'',token:null
 };
+
+/* ── API ─────────────────────────────────
+   Reemplaza google.script.run.
+   Uso: api('POST','/auth/login',{pin:'1234'}).then(d=>...).catch(e=>...)
+─────────────────────────────────────────── */
+const API_URL = 'https://partydecor-api-production.up.railway.app/api';
+
+async function api(method, path, body) {
+  const headers = { 'Content-Type': 'application/json' };
+  if (S.token) headers['Authorization'] = 'Bearer ' + S.token;
+  const res = await fetch(API_URL + path, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : undefined
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Error ' + res.status);
+  return data;
+}
 
 /* ══ LOGIN ══════════════════════════════ */
 function pinPress(d){
@@ -659,13 +678,18 @@ function pinPress(d){
   S.pinBuf+=d; updDots('pd',S.pinBuf,false);
   if(S.pinBuf.length===4){
     setTimeout(()=>{
-      google.script.run
-        .withSuccessHandler(ok=>{
-          if(ok){document.getElementById('loginScreen').style.display='none';document.getElementById('appScreen').classList.add('visible');iniciar();}
-          else{updDots('pd','1234',true);document.getElementById('loginErr').classList.add('show');setTimeout(()=>{S.pinBuf='';updDots('pd','',false);document.getElementById('loginErr').classList.remove('show');},1300);}
+      api('POST','/auth/login',{pin:S.pinBuf})
+        .then(res=>{
+          S.token=res.token;
+          document.getElementById('loginScreen').style.display='none';
+          document.getElementById('appScreen').classList.add('visible');
+          iniciar();
         })
-        .withFailureHandler(()=>{S.pinBuf='';updDots('pd','',false);})
-        .verificarPassword('login',S.pinBuf);
+        .catch(()=>{
+          updDots('pd','1234',true);
+          document.getElementById('loginErr').classList.add('show');
+          setTimeout(()=>{S.pinBuf='';updDots('pd','',false);document.getElementById('loginErr').classList.remove('show');},1300);
+        });
     },100);
   }
 }
@@ -681,10 +705,10 @@ document.addEventListener('keydown',e=>{
 /* ══ INIT ═══════════════════════════════ */
 function iniciar(){
   initTheme();
-  google.script.run.withSuccessHandler(recibirListas).obtenerListas();
-  google.script.run.withSuccessHandler(recibirEventos).withFailureHandler(e=>toast('Error eventos: '+e.message,'error')).obtenerEventos();
-  google.script.run.withSuccessHandler(recibirCatalogo).withFailureHandler(e=>toast('Error catálogo: '+e.message,'error')).obtenerCatalogoCompleto();
-  google.script.run.withSuccessHandler(d=>{S.clientes=d||[];}).obtenerClientes();
+  api('GET','/listas').then(recibirListas).catch(e=>toast('Error listas: '+e.message,'error'));
+  api('GET','/eventos').then(recibirEventos).catch(e=>toast('Error eventos: '+e.message,'error'));
+  api('GET','/listas/catalogo').then(recibirCatalogo).catch(e=>toast('Error catálogo: '+e.message,'error'));
+  api('GET','/listas/clientes').then(d=>{S.clientes=d||[];}).catch(e=>toast('Error clientes: '+e.message,'error'));
 
   const srch=document.getElementById('srch');
   srch.addEventListener('input',onSrch);
@@ -778,16 +802,14 @@ function togglePago(){
   const ev=S.eventoActual; if(!ev) return;
   const nuevo=ev.e_pago==='Realizado'?'Pendiente':'Realizado';
   setStatus('saving','Actualizando…');
-  google.script.run
-    .withSuccessHandler(res=>{
-      if(res?.error){setStatus('error',res.error);return;}
+  api('PATCH','/eventos/'+ev.id,{e_pago:nuevo})
+    .then(res=>{
       ev.e_pago=nuevo;
       setStatus('saved','✓');setTimeout(()=>setStatus('',''),2000);
       seleccionarEvento(ev);
       toast(nuevo==='Realizado'?'✓ Pago marcado como realizado':'Pago marcado como pendiente','ok');
     })
-    .withFailureHandler(e=>setStatus('error',e.message))
-    .editarEvento({idEvento:ev.id,e_pago:nuevo});
+    .catch(e=>setStatus('error',e.message));
 }
 
 /* ══ BÚSQUEDA CLIENTE ═══════════════════ */
@@ -914,17 +936,15 @@ function agregarItemExterno(){
   const desc=document.getElementById('extDesc').value.trim();
   const costo=parseFloat(document.getElementById('extCosto').value)||0;
   bloquear(true);setStatus('saving','Guardando…');
-  google.script.run
-    .withSuccessHandler(res=>{
+  api('POST','/items/'+eid+'/externo',{nombre:nom,cantidad:cant,precio,desc,costo})
+    .then(res=>{
       bloquear(false);
-      if(res?.error){setStatus('error',res.error);toast(res.error,'error');return;}
       setStatus('saved','Guardado ✓');toast('✓ '+nom,'ok');
       document.getElementById('extToggle').checked=false;toggleExt();
       setTimeout(()=>setStatus('',''),2500);
       if(res.items){const prevLen=S.cotizacion.length;S.cotizacion=res.items;if(res.items.length>prevLen){appendCotRow(res.items[res.items.length-1],res.items.length-1);}else{renderCot();}}else{cargarCotizacion(eid);}
     })
-    .withFailureHandler(err=>{bloquear(false);setStatus('error','Error');toast(err.message,'error');})
-    .agregarItemExterno(eid,nom,cant,precio,desc,costo);
+    .catch(err=>{bloquear(false);setStatus('error','Error');toast(err.message,'error');});
 }
 
 /* ══ AGREGAR ITEM ════════════════════════ */
@@ -938,30 +958,25 @@ function agregarItem(){
   if(esVar){precio=parseFloat(document.getElementById('pmVal').value);if(isNaN(precio)||precio<0){toast('⚠ Ingresa el precio acordado','warn');document.getElementById('pmVal').focus();return;}desc=document.getElementById('descVal').value.trim();}
   // item externo se agrega por separado con agregarItemExterno()
   bloquear(true);setStatus('saving','Guardando…');
-  google.script.run
-    .withSuccessHandler(res=>{bloquear(false);if(res?.error){setStatus('error',res.error);toast(res.error,'error');return;}setStatus('saved','Guardado ✓');toast('✓ '+S.itemSel.nombre,'ok');document.getElementById('qty').value=1;if(esVar){document.getElementById('pmVal').value='';document.getElementById('descVal').value='';}document.getElementById('provToggle').checked=false;toggleProv();setTimeout(()=>setStatus('',''),2500);if(res.items){const prevLen=S.cotizacion.length;S.cotizacion=res.items;if(res.items.length>prevLen){appendCotRow(res.items[res.items.length-1],res.items.length-1);}else{renderCot();}}else{cargarCotizacion(eid);}})
-    .withFailureHandler(err=>{bloquear(false);setStatus('error','Error');toast(err.message,'error');})
-    .agregarItemEvento(eid,S.itemSel.nombre,qty,precio,desc,'',0);
+  api('POST','/items/'+eid,{nombre:S.itemSel.nombre,cantidad:qty,precio,desc})
+    .then(res=>{bloquear(false);setStatus('saved','Guardado ✓');toast('✓ '+S.itemSel.nombre,'ok');document.getElementById('qty').value=1;if(esVar){document.getElementById('pmVal').value='';document.getElementById('descVal').value='';}document.getElementById('provToggle').checked=false;toggleProv();setTimeout(()=>setStatus('',''),2500);if(res.items){const prevLen=S.cotizacion.length;S.cotizacion=res.items;if(res.items.length>prevLen){appendCotRow(res.items[res.items.length-1],res.items.length-1);}else{renderCot();}}else{cargarCotizacion(eid);}})
+    .catch(err=>{bloquear(false);setStatus('error','Error');toast(err.message,'error');});
 }
 
 /* ══ COTIZACIÓN ═════════════════════════ */
 function cargarCotizacion(eid){
-  google.script.run
-    .withSuccessHandler(items=>{
+  api('GET','/items/'+eid)
+    .then(items=>{
       S.cotizacion=items||[];
       renderCot();
-      // Sync total back to eventoActual so strip reflects added/removed items
       if(S.eventoActual){
         const newTotal=items.reduce((s,i)=>s+(Number(i.total)||0),0);
         S.eventoActual.total=newTotal;
         S.eventoActual.saldo=Math.max(0,newTotal-(S.eventoActual.anticipo||0));
-        // Re-render strip to show updated total
         seleccionarEvento(S.eventoActual);
       }
-      // Scroll to last row
     })
-    .withFailureHandler(err=>toast('Error cargando cotización: '+err.message,'error'))
-    .obtenerItemsEvento(eid);
+    .catch(err=>toast('Error cargando cotización: '+err.message,'error'));
 }
 
 function appendCotRow(it, idx){
@@ -1027,10 +1042,9 @@ function cambiarCant(idx,delta){
   S.cotizacion[idx]={...it,cantidad:n,total:n*Number(it.precio)};
   renderCot();
   setStatus('saving','Guardando…');
-  google.script.run
-    .withSuccessHandler(()=>{setStatus('saved','✓');setTimeout(()=>setStatus('',''),2000);})
-    .withFailureHandler(e=>{setStatus('error',e.message);S.cotizacion[idx]=it;renderCot();})
-    .actualizarCantidadItem(eid,it.item,n);
+  api('PATCH','/items/'+eid+'/cantidad',{nombre:it.item,cantidad:n})
+    .then(()=>{setStatus('saved','✓');setTimeout(()=>setStatus('',''),2000);})
+    .catch(e=>{setStatus('error',e.message);S.cotizacion[idx]=it;renderCot();});
 }
 function editarPrecio(idx,val){
   const eid=S.eventoActual?.id,it=S.cotizacion[idx];
@@ -1042,10 +1056,9 @@ function editarPrecio(idx,val){
   let total=0;S.cotizacion.forEach(i=>total+=Number(i.total)||0);
   document.getElementById('totalAmt').textContent=fmt(total);
   setStatus('saving','Guardando…');
-  google.script.run
-    .withSuccessHandler(()=>{setStatus('saved','✓');setTimeout(()=>setStatus('',''),2000);})
-    .withFailureHandler(e=>{setStatus('error',e.message);S.cotizacion[idx]=backup;let t=0;S.cotizacion.forEach(i=>t+=Number(i.total)||0);document.getElementById('totalAmt').textContent=fmt(t);})
-    .actualizarPrecioItem(eid,it.item,p);
+  api('PATCH','/items/'+eid+'/precio',{nombre:it.item,precio:p})
+    .then(()=>{setStatus('saved','✓');setTimeout(()=>setStatus('',''),2000);})
+    .catch(e=>{setStatus('error',e.message);S.cotizacion[idx]=backup;let t=0;S.cotizacion.forEach(i=>t+=Number(i.total)||0);document.getElementById('totalAmt').textContent=fmt(t);});
 }
 function eliminarItem(idx){
   const eid=S.eventoActual?.id,it=S.cotizacion[idx];
@@ -1054,12 +1067,11 @@ function eliminarItem(idx){
   S.cotizacion.splice(idx,1);
   renderCot();
   setStatus('saving','Eliminando…');
-  google.script.run
-    .withSuccessHandler(()=>{setStatus('saved','✓');setTimeout(()=>setStatus('',''),2000);})
-    .withFailureHandler(e=>{setStatus('error',e.message);S.cotizacion=backup;renderCot();})
-    .eliminarItemEvento(eid,it.item);
+  api('DELETE','/items/'+eid+'/'+encodeURIComponent(it.item))
+    .then(()=>{setStatus('saved','✓');setTimeout(()=>setStatus('',''),2000);})
+    .catch(e=>{setStatus('error',e.message);S.cotizacion=backup;renderCot();});
 }
-function confirmarLimpiar(){if(!confirm('¿Eliminar todos los items?'))return;const eid=S.eventoActual?.id;if(!eid)return;setStatus('saving','Limpiando…');google.script.run.withSuccessHandler(()=>{setStatus('saved','✓');S.cotizacion=[];renderCot();setTimeout(()=>setStatus('',''),2000);}).withFailureHandler(e=>setStatus('error',e.message)).limpiarCotizacion(eid);}
+function confirmarLimpiar(){if(!confirm('¿Eliminar todos los items?'))return;const eid=S.eventoActual?.id;if(!eid)return;setStatus('saving','Limpiando…');api('DELETE','/items/'+eid).then(()=>{setStatus('saved','✓');S.cotizacion=[];renderCot();setTimeout(()=>setStatus('',''),2000);}).catch(e=>setStatus('error',e.message));}
 
 /* ══ PDF ════════════════════════════════ */
 function generarPdf(){
@@ -1068,10 +1080,9 @@ function generarPdf(){
   if(!S.cotizacion?.length){toast('⚠ La cotización está vacía','warn');return;}
   const btn=document.getElementById('btnPdf'),txt=document.getElementById('pdfTxt');
   btn.disabled=true;txt.innerHTML='<span class="spinner"></span> Generando…';
-  google.script.run
-    .withSuccessHandler(res=>{btn.disabled=false;txt.textContent='Regenerar PDF';if(res?.error){toast(res.error,'error');return;}document.getElementById('pdfLink').href=res.url;document.getElementById('pdfLinkWrap').style.display='block';if(S.eventoActual){S.eventoActual.pdf_url=res.url;const ev=S.eventos?.find(e=>e.id===S.eventoActual.id);if(ev)ev.pdf_url=res.url;}toast('✓ PDF generado','ok');})
-    .withFailureHandler(err=>{btn.disabled=false;txt.textContent='Generar cotización PDF';toast(err.message,'error');})
-    .generarPdfCotizacion({idEvento:eid, iva:S.eventoActual?.iva||'No aplica', isr:S.eventoActual?.isr||'No aplica'});
+  api('POST','/pdf/'+eid,{iva:S.eventoActual?.iva||'No aplica',isr:S.eventoActual?.isr||'No aplica'})
+    .then(res=>{btn.disabled=false;txt.textContent='Regenerar PDF';document.getElementById('pdfLink').href=res.url;document.getElementById('pdfLinkWrap').style.display='block';if(S.eventoActual){S.eventoActual.pdf_url=res.url;const ev=S.eventos?.find(e=>e.id===S.eventoActual.id);if(ev)ev.pdf_url=res.url;}toast('✓ PDF generado','ok');})
+    .catch(err=>{btn.disabled=false;txt.textContent='Generar cotización PDF';toast(err.message,'error');});
 }
 
 /* ══ MODAL EVENTO ════════════════════════ */
@@ -1110,10 +1121,9 @@ function crearEvento(){
     isr:document.getElementById('nIsr').value,
     idCliente:S.cliSel?.id||null
   };
-  google.script.run
-    .withSuccessHandler(res=>{btn.disabled=false;btn.textContent='Confirmar';if(res?.error){toast(res.error,'error');return;}S.eventos.unshift(res);S.eventosFilt=S.eventos;llenarSel(S.eventosFilt);seleccionarEvento(res);closeModal('mEvento');toast('✓ Evento creado: '+res.id,'ok');['nNom','nTel1','nTel2','nFecha','nDir','nObs','nDirCli'].forEach(id=>document.getElementById(id).value='');document.getElementById('cliInfo').style.display='none';document.getElementById('cliSrch').value='';S.cliSel=null;})
-    .withFailureHandler(err=>{btn.disabled=false;btn.textContent='Confirmar';toast(err.message,'error');})
-    .crearEvento(datos);
+  api('POST','/eventos',datos)
+    .then(res=>{btn.disabled=false;btn.textContent='Confirmar';S.eventos.unshift(res);S.eventosFilt=S.eventos;llenarSel(S.eventosFilt);seleccionarEvento(res);closeModal('mEvento');toast('✓ Evento creado: '+res.id,'ok');['nNom','nTel1','nTel2','nFecha','nDir','nObs','nDirCli'].forEach(id=>document.getElementById(id).value='');document.getElementById('cliInfo').style.display='none';document.getElementById('cliSrch').value='';S.cliSel=null;})
+    .catch(err=>{btn.disabled=false;btn.textContent='Confirmar';toast(err.message,'error');});
 }
 
 /* ══ EDITAR EVENTO ══════════════════════ */
@@ -1144,10 +1154,9 @@ function guardarEdicion(){
   const datos={idEvento:ev.id,fecha:document.getElementById('eFecha').value,tipo:document.getElementById('eTipoEv').value,dir:document.getElementById('eDir').value.trim(),estado:document.getElementById('eEstado').value,e_pago:document.getElementById('eEPago').value,obs:document.getElementById('eObs').value.trim(),iva:document.getElementById('eIva').value,isr:document.getElementById('eIsr').value,anticipo:parseFloat(document.getElementById('eAnticipo').value)||0};
   if(S.cliDesbloq){datos.nombre=document.getElementById('eNom').value.trim();datos.tel1=document.getElementById('eTel1').value.trim();datos.tel2=document.getElementById('eTel2').value.trim();datos.tipo_cli=document.getElementById('eTipoCli').value;datos.fuente=document.getElementById('eFuente').value;datos.dir_cli=document.getElementById('eDirCli').value.trim();if(!datos.nombre){toast('⚠ Nombre requerido','warn');return;}}
   setStatus('saving','Guardando…');
-  google.script.run
-    .withSuccessHandler(res=>{if(res?.error){setStatus('error',res.error);toast(res.error,'error');return;}setStatus('saved','Guardado ✓');toast('✓ Actualizado','ok');Object.assign(S.eventoActual,{fecha:res.fecha,fecha_iso:res.fecha_iso,tipo:res.tipo,dir:res.dir,estado:res.estado,e_pago:res.e_pago,iva:(res.iva!==undefined&&res.iva!==null?res.iva:(ev.iva||'No aplica')),isr:(res.isr!==undefined&&res.isr!==null?res.isr:(ev.isr||'No aplica')),anticipo:res.anticipo!==undefined?res.anticipo:ev.anticipo,saldo:res.saldo!==undefined?res.saldo:ev.saldo,obs:res.obs,cliente:res.cliente||ev.cliente,tel1:res.tel1||ev.tel1,tel2:res.tel2||ev.tel2,tipo_cli:res.tipo_cli||ev.tipo_cli,fuente:res.fuente||ev.fuente,dir_cli:res.dir_cli||ev.dir_cli,pdf_url:res.pdf_url||ev.pdf_url||''});seleccionarEvento(S.eventoActual);llenarSel(S.eventosFilt);closeModal('mEdit');setTimeout(()=>setStatus('',''),2500);})
-    .withFailureHandler(err=>{setStatus('error',err.message);toast(err.message,'error');})
-    .editarEvento(datos);
+  api('PATCH','/eventos/'+datos.idEvento,datos)
+    .then(res=>{setStatus('saved','Guardado ✓');toast('✓ Actualizado','ok');Object.assign(S.eventoActual,{fecha:res.f_ev||res.fecha,fecha_iso:res.f_ev||res.fecha_iso,tipo:res.tipo,dir:res.dir,estado:res.estado,e_pago:res.e_pago,iva:(res.iva||ev.iva||'No aplica'),isr:(res.isr||ev.isr||'No aplica'),anticipo:res.anticipo!==undefined?Number(res.anticipo):ev.anticipo,saldo:res.saldo!==undefined?Number(res.saldo):ev.saldo,obs:res.obs,cliente:res.cli||res.cliente||ev.cliente,tel1:res.tel1||ev.tel1,tel2:res.tel2||ev.tel2,tipo_cli:res.tipo_cli||ev.tipo_cli,fuente:res.fuente||ev.fuente,dir_cli:res.dir_cli||ev.dir_cli,pdf_url:res.pdf_url||ev.pdf_url||''});seleccionarEvento(S.eventoActual);llenarSel(S.eventosFilt);closeModal('mEdit');setTimeout(()=>setStatus('',''),2500);})
+    .catch(err=>{setStatus('error',err.message);toast(err.message,'error');});
 }
 
 /* ══ CONTRASEÑA CLIENTE ═════════════════ */
@@ -1156,13 +1165,27 @@ function pwdPress(d){
   if(S.pwdBuf.length>=4)return;S.pwdBuf+=d;updDots('ppd',S.pwdBuf,false);
   if(S.pwdBuf.length===4){
     setTimeout(()=>{
-      google.script.run
-        .withSuccessHandler(ok=>{
-          if(ok){closeModal('mPwd');S.cliDesbloq=true;document.getElementById('cliLocked').style.display='none';document.getElementById('cliUnlocked').style.display='flex';document.getElementById('btnDesbloq').style.display='none';document.getElementById('lockLbl').textContent='🔓 Desbloqueado';const ev=S.eventoActual;document.getElementById('eNom').value=ev?.cliente||'';document.getElementById('eTel1').value=ev?.tel1||'';document.getElementById('eTel2').value=ev?.tel2||'';document.getElementById('eDirCli').value=ev?.dir_cli||'';if(ev?.tipo_cli){const s=document.getElementById('eTipoCli');if([...s.options].some(o=>o.value===ev.tipo_cli))s.value=ev.tipo_cli;}if(ev?.fuente){const s=document.getElementById('eFuente');if([...s.options].some(o=>o.value===ev.fuente))s.value=ev.fuente;}}
-          else{updDots('ppd','1234',true);document.getElementById('pwdErr').classList.add('show');setTimeout(()=>{S.pwdBuf='';updDots('ppd','',false);document.getElementById('pwdErr').classList.remove('show');},1400);}
+      // En v7 todos los usuarios son empleados — verificar PIN contra el mismo endpoint de login
+      api('POST','/auth/login',{pin:S.pwdBuf})
+        .then(res=>{
+          closeModal('mPwd');S.cliDesbloq=true;
+          document.getElementById('cliLocked').style.display='none';
+          document.getElementById('cliUnlocked').style.display='flex';
+          document.getElementById('btnDesbloq').style.display='none';
+          document.getElementById('lockLbl').textContent='🔓 Desbloqueado';
+          const ev=S.eventoActual;
+          document.getElementById('eNom').value=ev?.cliente||'';
+          document.getElementById('eTel1').value=ev?.tel1||'';
+          document.getElementById('eTel2').value=ev?.tel2||'';
+          document.getElementById('eDirCli').value=ev?.dir_cli||'';
+          if(ev?.tipo_cli){const s=document.getElementById('eTipoCli');if([...s.options].some(o=>o.value===ev.tipo_cli))s.value=ev.tipo_cli;}
+          if(ev?.fuente){const s=document.getElementById('eFuente');if([...s.options].some(o=>o.value===ev.fuente))s.value=ev.fuente;}
         })
-        .withFailureHandler(()=>{S.pwdBuf='';updDots('ppd','',false);})
-        .verificarPassword('cliente',S.pwdBuf);
+        .catch(()=>{
+          updDots('ppd','1234',true);
+          document.getElementById('pwdErr').classList.add('show');
+          setTimeout(()=>{S.pwdBuf='';updDots('ppd','',false);document.getElementById('pwdErr').classList.remove('show');},1400);
+        });
     },100);
   }
 }
