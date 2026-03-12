@@ -561,10 +561,9 @@ body.light .theme-switch-thumb{transform:translateX(16px);background:var(--gold)
               <div class="fg"><label class="fl">Cantidad *</label>
                 <div class="qi" style="justify-content:flex-start;gap:0;border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--input)">
                   <button class="qs" style="width:44px;height:44px;font-size:20px;border:none;background:transparent;color:var(--text1);cursor:pointer;flex-shrink:0" onclick="extCantChange(-1)">−</button>
-                  <span id="extCantVal" style="flex:1;text-align:center;font-size:16px;font-weight:600;color:var(--text1);line-height:44px">1</span>
+                  <input id="extCant" type="number" min="1" value="1" style="flex:1;text-align:center;font-size:16px;font-weight:600;color:var(--text1);background:transparent;border:none;outline:none;width:0;min-width:0;padding:0" oninput="this.value=Math.max(1,parseInt(this.value)||1)">
                   <button class="qs" style="width:44px;height:44px;font-size:20px;border:none;background:transparent;color:var(--text1);cursor:pointer;flex-shrink:0" onclick="extCantChange(1)">+</button>
                 </div>
-                <input type="hidden" id="extCant" value="1">
               </div>
               <div class="fg"><label class="fl">Precio de venta *</label>
                 <input class="fi" type="number" id="extPrecio" min="0" placeholder="0.00">
@@ -923,10 +922,8 @@ function calcSaldo(){
 
 function extCantChange(delta){
   const input=document.getElementById('extCant');
-  const display=document.getElementById('extCantVal');
   let val=Math.max(1,(parseInt(input.value,10)||1)+delta);
   input.value=val;
-  display.textContent=val;
 }
 function toggleProv(){
   const on=document.getElementById('provToggle')?.checked;
