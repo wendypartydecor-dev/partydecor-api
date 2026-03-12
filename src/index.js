@@ -6,6 +6,7 @@ const authRoutes   = require('./routes/auth');
 const listasRoutes = require('./routes/listas');
 const eventosRoutes = require('./routes/eventos');
 const itemsRoutes  = require('./routes/items');
+const pdfRoutes    = require('./routes/pdf');
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -22,6 +23,7 @@ app.use('/api/auth',    authRoutes);
 app.use('/api/listas',  listasRoutes);
 app.use('/api/eventos', eventosRoutes);
 app.use('/api/items',   itemsRoutes);
+app.use('/api/pdf',     pdfRoutes);
 
 // ─── 404 ─────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
