@@ -137,7 +137,7 @@ router.post('/:idEvento', requireAuth, async (req, res) => {
     const isrPct  = isrStr === 'ISR 1.25%' ? 0.0125 : 0;
     const ivaAmt  = subtotal * ivaPct;
     const isrAmt  = subtotal * isrPct;
-    const total   = subtotal + ivaAmt + isrAmt;
+    const total   = subtotal + ivaAmt - isrAmt;
     const anticipo = Number(ev.anticipo) || 0;
 
     // 4. Formatear fecha
