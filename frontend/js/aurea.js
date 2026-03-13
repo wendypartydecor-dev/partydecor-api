@@ -18,6 +18,12 @@ const S = {
   pinBuf: '',
   theme: 'rosa',
   mode: 'dark',
+  clientes: [],
+  cotizacion: [],
+  itemSel: null,
+  cliSel: null,
+  clienteEditId: null,
+  guardando: false,
 };
 
 /* ==========================================
@@ -62,14 +68,13 @@ function setMode(mode) {
 }
 
 function updateLogo() {
-  // Función original: actualiza dinámicamente el logo según tema y empresa
-  // Aquí se mantiene la lógica original (simplificada)
   const dark = S.mode === 'dark';
   const gold = S.theme === 'gold';
-  // En modo oscuro con tema gold → logo dorado, resto → logo negro con filtro invert
-  // En modo claro → logo negro sin filtro
-  // Nota: el src real se cargará desde la empresa o se usará el placeholder
-  // Por ahora no hacemos cambios adicionales
+  const emp = S.empresa || {};
+  const appLogo = document.getElementById('appLogo');
+  const loginLogoImg = document.getElementById('loginLogoImg');
+  if (appLogo) appLogo.src = emp.logo_header_url || (dark && gold ? 'placeholder-gold' : 'placeholder');
+  if (loginLogoImg) loginLogoImg.src = emp.logo_login_url || (dark && gold ? 'placeholder-gold' : 'placeholder');
 }
 
 function loadTheme() {
@@ -106,6 +111,7 @@ function navTo(sec) {
   closeSidebar();
   const fab = document.getElementById('fabBtn');
   fab.style.display = sec === 'eventos' ? 'flex' : 'none';
+  if (sec === 'clientes') cargarClientes();
 }
 
 function toggleSidebar() {
@@ -123,8 +129,8 @@ function closeSidebar() {
    LOGIN — CONTRASEÑA
 ============================================= */
 function switchLoginTab(tab) {
-  const passForm = document.getElementById('loginPassForm');
-  const pinForm = document.getElementById('loginPinForm');
+  const passForm = document.getElementById('loginFormPass');
+  const pinForm = document.getElementById('loginFormPin');
   const tabPass = document.getElementById('tabPass');
   const tabPin = document.getElementById('tabPin');
   if (tab === 'pass') {
@@ -159,7 +165,6 @@ async function doLogin() {
   btn.disabled = true;
   btn.innerHTML = '<div class="spinner" style="margin:0 auto"></div>';
   try {
-    // Intentar login con usuario+contraseña (usando pin como contraseña temporal)
     const res = await api('POST', '/auth/login', { pin: pass, usuario: user });
     S.token = res.token;
     S.usuario = res.usuario;
@@ -194,7 +199,7 @@ function mostrarSelectorEmpresa(empresas) {
   const list = document.getElementById('empresaList');
   list.innerHTML = empresas.map((e, i) => `
     <div class="empresa-item" onclick="seleccionarEmpresa(${i})">
-      <img class="empresa-logo" src="${e.logo || ''}" onerror="this.style.display='none'" alt="">
+      <img class="empresa-logo" src="${e.logo_login_url || ''}" onerror="this.style.display='none'" alt="">
       <div>
         <div class="empresa-name">${esc(e.nombre)}</div>
         <div class="empresa-rol">${esc(e.rol || 'Usuario')}</div>
@@ -216,7 +221,7 @@ function entrarApp() {
   const u = S.usuario || {};
   const emp = S.empresa || {};
 
-  if (emp.tema) setTheme(emp.tema);
+  if (emp.tema_default) setTheme(emp.tema_default);
 
   document.getElementById('appEmpresaNombre').textContent = emp.nombre || 'Party Decor';
   document.getElementById('loginEmpresaNombre').textContent = emp.nombre || 'Party Decor';
@@ -239,6 +244,7 @@ function entrarApp() {
     el.classList.toggle('visible', esAdmin);
   });
 
+  updateLogo();
   showScreen('screenApp');
   navTo('eventos');
   cargarEventos();
@@ -302,7 +308,6 @@ async function cargarEventos() {
       fecha_iso: e.fecha_iso || e.f_ev || '',
     }));
     filtrarEventos();
-    cargarClientes();
   } catch(e) {
     document.getElementById('evGrid').innerHTML = `<div style="text-align:center;padding:40px;color:var(--text3)">Error al cargar eventos</div>`;
     toast('Error: ' + e.message, 'error');
@@ -485,6 +490,10 @@ async function generarPDF(id) {
   }
 }
 
+function abrirNuevoEvento() {
+  toast('Próximamente: nuevo evento', 'warn');
+}
+
 /* ==========================================
    CLIENTES
 ============================================= */
@@ -522,9 +531,22 @@ function renderClientes() {
   `).join('');
 }
 
+function abrirNuevoCliente() {
+  S.clienteEditId = null;
+  document.getElementById('editClienteId').value = '';
+  document.getElementById('editClienteNombre').value = '';
+  document.getElementById('editClienteTel1').value = '';
+  document.getElementById('editClienteTel2').value = '';
+  document.getElementById('editClienteTipo').value = 'Particular';
+  document.getElementById('editClienteFuente').value = 'Sin datos';
+  document.getElementById('editClienteDir').value = '';
+  openModal('modalCliente');
+}
+
 function editarCliente(id) {
   const c = S.clientes.find(x => x.id === id);
   if (!c) return;
+  S.clienteEditId = id;
   document.getElementById('editClienteId').value = c.id;
   document.getElementById('editClienteNombre').value = c.nombre;
   document.getElementById('editClienteTel1').value = c.tel1 || '';
@@ -564,21 +586,43 @@ async function guardarCliente() {
   }
 }
 
-function abrirNuevoCliente() {
-  document.getElementById('editClienteId').value = '';
-  document.getElementById('editClienteNombre').value = '';
-  document.getElementById('editClienteTel1').value = '';
-  document.getElementById('editClienteTel2').value = '';
-  document.getElementById('editClienteTipo').value = 'Particular';
-  document.getElementById('editClienteFuente').value = 'Sin datos';
-  document.getElementById('editClienteDir').value = '';
-  openModal('modalCliente');
-}
-
 function verEventosCliente(id) {
   navTo('eventos');
   document.getElementById('evSearch').value = '';
   toast('Función en desarrollo', 'warn');
+}
+
+function filtrarClientes() {
+  const q = document.getElementById('cliSearch')?.value.toLowerCase().trim() || '';
+  if (!q) {
+    renderClientes();
+    return;
+  }
+  const filtrados = S.clientes.filter(c => 
+    c.nombre.toLowerCase().includes(q) || 
+    c.tel1.includes(q) || 
+    (c.tel2 && c.tel2.includes(q))
+  );
+  const container = document.getElementById('clientesGrid');
+  if (!filtrados.length) {
+    container.innerHTML = `<div style="text-align:center;padding:48px;color:var(--text3)">No se encontraron clientes</div>`;
+  } else {
+    container.innerHTML = filtrados.map(c => `
+      <div class="cliente-card">
+        <div class="cliente-nombre">${esc(c.nombre)}</div>
+        <div class="cliente-telefono">📞 ${esc(c.tel1)}${c.tel2 ? ' · ' + esc(c.tel2) : ''}</div>
+        ${c.dir ? `<div style="font-size:11px;color:var(--text3);margin-top:4px">📍 ${esc(c.dir)}</div>` : ''}
+        <div class="cliente-meta">
+          <span class="cliente-tipo">${esc(c.tipo || 'Particular')}</span>
+          <span class="cliente-fuente">${esc(c.fuente || 'Sin datos')}</span>
+        </div>
+        <div class="cliente-actions">
+          <button class="btn btn-ghost btn-sm" onclick="editarCliente('${c.id}')">✎ Editar</button>
+          <button class="btn btn-ghost btn-sm" onclick="verEventosCliente('${c.id}')">📋 Eventos</button>
+        </div>
+      </div>
+    `).join('');
+  }
 }
 
 /* ==========================================
