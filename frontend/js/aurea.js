@@ -302,6 +302,7 @@ async function cargarEventos() {
       fecha_iso: e.fecha_iso || e.f_ev || '',
     }));
     filtrarEventos();
+    cargarClientes();
   } catch(e) {
     document.getElementById('evGrid').innerHTML = `<div style="text-align:center;padding:40px;color:var(--text3)">Error al cargar eventos</div>`;
     toast('Error: ' + e.message, 'error');
@@ -448,17 +449,136 @@ function abrirCotizacion(id) {
 }
 
 async function generarPDF(id) {
-  toast('Generando PDF…');
+  if (!id && S.eventoActual) id = S.eventoActual.id;
+  if (!id) {
+    toast('Selecciona un evento primero', 'warn');
+    return;
+  }
+  const btn = document.getElementById('btnPdf');
+  const txt = document.getElementById('pdfTxt');
+  if (btn) {
+    btn.disabled = true;
+    txt.innerHTML = '<span class="spinner"></span> Generando…';
+  }
   try {
-    const res = await api('POST', '/pdf/' + id);
-    window.open(res.url, '_blank');
+    const res = await api('POST', '/pdf/' + id, {
+      iva: S.eventoActual?.iva || 'No aplica',
+      isr: S.eventoActual?.isr || 'No aplica'
+    });
+    if (res.url) {
+      if (S.eventoActual) S.eventoActual.pdf_url = res.url;
+      const linkWrap = document.getElementById('pdfLinkWrap');
+      const pdfLink = document.getElementById('pdfLink');
+      if (linkWrap && pdfLink) {
+        pdfLink.href = res.url;
+        linkWrap.style.display = 'block';
+      }
+      toast('PDF generado correctamente', 'ok');
+    }
   } catch(e) {
-    toast('Error al generar PDF', 'error');
+    toast('Error al generar PDF: ' + e.message, 'error');
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      txt.textContent = 'Generar cotización PDF';
+    }
   }
 }
 
-function abrirNuevoEvento() {
-  toast('Próximamente: nuevo evento', 'warn');
+/* ==========================================
+   CLIENTES
+============================================= */
+async function cargarClientes() {
+  try {
+    const data = await api('GET', '/clientes');
+    S.clientes = data || [];
+    renderClientes();
+  } catch(e) {
+    toast('Error al cargar clientes: ' + e.message, 'error');
+  }
+}
+
+function renderClientes() {
+  const container = document.getElementById('clientesGrid');
+  if (!container) return;
+  if (!S.clientes.length) {
+    container.innerHTML = `<div style="text-align:center;padding:48px;color:var(--text3)">No hay clientes registrados</div>`;
+    return;
+  }
+  container.innerHTML = S.clientes.map(c => `
+    <div class="cliente-card">
+      <div class="cliente-nombre">${esc(c.nombre)}</div>
+      <div class="cliente-telefono">📞 ${esc(c.tel1)}${c.tel2 ? ' · ' + esc(c.tel2) : ''}</div>
+      ${c.dir ? `<div style="font-size:11px;color:var(--text3);margin-top:4px">📍 ${esc(c.dir)}</div>` : ''}
+      <div class="cliente-meta">
+        <span class="cliente-tipo">${esc(c.tipo || 'Particular')}</span>
+        <span class="cliente-fuente">${esc(c.fuente || 'Sin datos')}</span>
+      </div>
+      <div class="cliente-actions">
+        <button class="btn btn-ghost btn-sm" onclick="editarCliente('${c.id}')">✎ Editar</button>
+        <button class="btn btn-ghost btn-sm" onclick="verEventosCliente('${c.id}')">📋 Eventos</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function editarCliente(id) {
+  const c = S.clientes.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('editClienteId').value = c.id;
+  document.getElementById('editClienteNombre').value = c.nombre;
+  document.getElementById('editClienteTel1').value = c.tel1 || '';
+  document.getElementById('editClienteTel2').value = c.tel2 || '';
+  document.getElementById('editClienteTipo').value = c.tipo || 'Particular';
+  document.getElementById('editClienteFuente').value = c.fuente || 'Sin datos';
+  document.getElementById('editClienteDir').value = c.dir || '';
+  openModal('modalCliente');
+}
+
+async function guardarCliente() {
+  const id = document.getElementById('editClienteId').value;
+  const datos = {
+    nombre: document.getElementById('editClienteNombre').value.trim(),
+    tel1: document.getElementById('editClienteTel1').value.trim(),
+    tel2: document.getElementById('editClienteTel2').value.trim(),
+    tipo: document.getElementById('editClienteTipo').value,
+    fuente: document.getElementById('editClienteFuente').value,
+    dir: document.getElementById('editClienteDir').value.trim(),
+  };
+  if (!datos.nombre || !datos.tel1) {
+    toast('Nombre y teléfono principal son obligatorios', 'warn');
+    return;
+  }
+  try {
+    if (id) {
+      await api('PATCH', '/clientes/' + id, datos);
+      toast('Cliente actualizado', 'ok');
+    } else {
+      await api('POST', '/clientes', datos);
+      toast('Cliente creado', 'ok');
+    }
+    closeModal('modalCliente');
+    cargarClientes();
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
+}
+
+function abrirNuevoCliente() {
+  document.getElementById('editClienteId').value = '';
+  document.getElementById('editClienteNombre').value = '';
+  document.getElementById('editClienteTel1').value = '';
+  document.getElementById('editClienteTel2').value = '';
+  document.getElementById('editClienteTipo').value = 'Particular';
+  document.getElementById('editClienteFuente').value = 'Sin datos';
+  document.getElementById('editClienteDir').value = '';
+  openModal('modalCliente');
+}
+
+function verEventosCliente(id) {
+  navTo('eventos');
+  document.getElementById('evSearch').value = '';
+  toast('Función en desarrollo', 'warn');
 }
 
 /* ==========================================
@@ -498,6 +618,14 @@ function toast(msg, type='') {
   t.textContent = msg;
   w.appendChild(t);
   setTimeout(() => t.remove(), 2800);
+}
+
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
 }
 
 /* ==========================================
