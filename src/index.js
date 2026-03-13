@@ -1,12 +1,14 @@
+// src/index.js — versión Aurea
 require('dotenv').config();
 const express = require('express');
 const cors    = require('cors');
 
-const authRoutes   = require('./routes/auth');
-const listasRoutes = require('./routes/listas');
-const eventosRoutes = require('./routes/eventos');
-const itemsRoutes  = require('./routes/items');
-const pdfRoutes    = require('./routes/pdf');
+const authRoutes     = require('./routes/auth');
+const listasRoutes   = require('./routes/listas');
+const eventosRoutes  = require('./routes/eventos');
+const itemsRoutes    = require('./routes/items');
+const pdfRoutes      = require('./routes/pdf');
+const empresasRoutes = require('./routes/empresas');  // ← nuevo
 
 const app  = express();
 const PORT = process.env.PORT || 3000;
@@ -15,15 +17,16 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*' }));
 app.use(express.json());
 
-// ─── Health check (Railway lo usa para saber si el server está vivo)
-app.get('/health', (req, res) => res.json({ ok: true, service: 'partydecor-api' }));
+// ─── Health check ────────────────────────────────────────────
+app.get('/health', (req, res) => res.json({ ok: true, service: 'aurea-api' }));
 
 // ─── Rutas ───────────────────────────────────────────────────
-app.use('/api/auth',    authRoutes);
-app.use('/api/listas',  listasRoutes);
-app.use('/api/eventos', eventosRoutes);
-app.use('/api/items',   itemsRoutes);
-app.use('/api/pdf',     pdfRoutes);
+app.use('/api/auth',     authRoutes);
+app.use('/api/listas',   listasRoutes);
+app.use('/api/eventos',  eventosRoutes);
+app.use('/api/items',    itemsRoutes);
+app.use('/api/pdf',      pdfRoutes);
+app.use('/api/empresas', empresasRoutes);  // ← nuevo
 
 // ─── 404 ─────────────────────────────────────────────────────
 app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
@@ -36,6 +39,6 @@ app.use((err, req, res, next) => {
 
 // ─── Arrancar ────────────────────────────────────────────────
 app.listen(PORT, () => {
-  console.log(`✓ partydecor-api corriendo en http://localhost:${PORT}`);
+  console.log(`✓ aurea-api corriendo en http://localhost:${PORT}`);
   console.log(`  Supabase: ${process.env.SUPABASE_URL}`);
 });
