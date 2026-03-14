@@ -213,7 +213,7 @@
     </div>  -->
 
     <!-- ==========================================
-      CLIENTES (sección funcional)
+         CLIENTES (sección funcional)
     ============================================= -->
     <div class="section" id="secClientes">
       <div class="page-header">
@@ -235,7 +235,7 @@
     <div class="modal-backdrop" id="modalCliente" onclick="if(event.target===this) closeModal('modalCliente')">
       <div class="modal">
         <div class="modal-handle"></div>
-        <div class="modal-title">${S.clienteEditId ? 'Editar cliente' : 'Nuevo cliente'}</div>
+        <div class="modal-title" id="modalClienteTitle">Nuevo cliente</div>
         <input type="hidden" id="editClienteId">
         <div class="fg">
           <label class="fl">Nombre completo *</label>
