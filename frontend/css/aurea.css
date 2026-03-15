@@ -1148,7 +1148,7 @@ input, select, textarea {
   right: 0;
   background: var(--surface);
   border: 1px solid var(--border2);
-  border-radius: var(--r-sm);
+  border-radius: var(--r);
   box-shadow: 0 12px 40px rgba(0,0,0,0.5);
   max-height: 50vh;
   overflow-y: auto;
@@ -1351,4 +1351,259 @@ input, select, textarea {
 }
 @keyframes spin {
   to { transform: rotate(360deg); }
+}
+/* Ocultar spin buttons en inputs tipo number */
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type=number] { -moz-appearance: textfield; }
+
+@media (max-width: 480px) {
+  .row-2 { grid-template-columns: 1fr; gap: 8px; }
+}
+/* Evitar zoom en inputs (móvil) */
+input, select, textarea {
+  touch-action: manipulation;
+  font-size: 16px;
+}
+/* Restaurar font-size solo para contextos que ya tienen su propio tamaño */
+.fi { font-size: 14px; }
+.fi.fi-sm { font-size: 13px; }
+
+/* ==========================================
+   CLIENTES GRID
+============================================= */
+.clientes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 12px;
+}
+.cliente-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: var(--r-lg);
+  padding: 16px;
+  transition: all var(--trans);
+  animation: fadeUp 0.2s ease both;
+}
+.cliente-card:hover {
+  border-color: var(--border2);
+  box-shadow: var(--shadow);
+}
+.cliente-nombre {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text1);
+  margin-bottom: 4px;
+}
+.cliente-telefono {
+  font-size: 12px;
+  color: var(--text2);
+  margin-bottom: 4px;
+  word-break: break-all;
+}
+.cliente-meta {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.cliente-tipo, .cliente-fuente {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--r-pill);
+  background: var(--surface2);
+  color: var(--text3);
+  border: 0.5px solid var(--border);
+}
+.cliente-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 0.5px solid var(--border);
+}
+@media (max-width: 480px) {
+  .clientes-grid { grid-template-columns: 1fr; }
+}
+
+/* ==========================================
+   EVENTO CARD — elementos adicionales
+============================================= */
+.ev-badge {
+  padding: 3px 9px;
+  border-radius: var(--r-pill);
+  font-size: 10px;
+  font-weight: 600;
+  background: var(--badge-pend-bg);
+  color: var(--badge-pend-c);
+  flex-shrink: 0;
+}
+.ev-badge.realizado {
+  background: var(--badge-done-bg);
+  color: var(--badge-done-c);
+}
+.ev-stats {
+  display: flex;
+  gap: 16px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 0.5px solid var(--border);
+}
+.ev-stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.ev-stat-label {
+  font-size: 9px;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: .4px;
+}
+.ev-stat-value {
+  font-size: 13px;
+  color: var(--text2);
+  font-weight: 500;
+}
+.ev-stat-value.saldo { color: var(--badge-pend-c); }
+.ev-stat-value.saldo.zero { color: var(--badge-done-c); }
+.ev-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 0.5px solid var(--border);
+}
+.ev-action-btn {
+  padding: 6px 12px;
+  border-radius: var(--r);
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--surface2);
+  border: 0.5px solid var(--border);
+  color: var(--text2);
+  cursor: pointer;
+  transition: all var(--trans);
+}
+.ev-action-btn:hover {
+  background: var(--border);
+  color: var(--text1);
+}
+.ev-action-btn.danger {
+  color: var(--badge-pend-c);
+  border-color: var(--badge-pend-bg);
+}
+
+/* ==========================================
+   MODAL CLIENTE — field styles
+============================================= */
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 14px;
+}
+.field-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+}
+.field-label .required {
+  color: var(--badge-pend-c);
+  margin-left: 2px;
+}
+.field-input {
+  background: var(--input);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--r);
+  padding: 11px 14px;
+  font-size: 14px;
+  color: var(--text1);
+  transition: border-color var(--trans);
+  width: 100%;
+  outline: none;
+  touch-action: manipulation;
+}
+.field-input:focus {
+  border-color: var(--accent);
+}
+.field-select {
+  background: var(--input);
+  border: 0.5px solid var(--border2);
+  border-radius: var(--r);
+  padding: 11px 14px;
+  font-size: 14px;
+  color: var(--text1);
+  transition: border-color var(--trans);
+  width: 100%;
+  outline: none;
+  appearance: none;
+  cursor: pointer;
+}
+.field-select:focus {
+  border-color: var(--accent);
+}
+/* Modal moderno con header/body/footer */
+.modal-moderno {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0;
+  overflow: hidden;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 20px 16px;
+  border-bottom: 0.5px solid var(--border);
+}
+.modal-header .modal-title {
+  font-family: var(--font-serif);
+  font-size: 18px;
+  color: var(--text1);
+  margin: 0;
+}
+.modal-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: none;
+  color: var(--text3);
+  font-size: 13px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--trans);
+}
+.modal-close:hover {
+  background: var(--border);
+  color: var(--text1);
+}
+.modal-body {
+  padding: 18px 20px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.modal-body::-webkit-scrollbar { width: 4px; }
+.modal-body::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 4px; }
+.modal-footer {
+  padding: 14px 20px;
+  border-top: 0.5px solid var(--border);
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+@media (max-width: 480px) {
+  .row-2 { grid-template-columns: 1fr; }
+  .field-input, .field-select { font-size: 16px; }
 }
