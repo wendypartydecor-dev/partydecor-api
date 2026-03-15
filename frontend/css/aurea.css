@@ -1441,3 +1441,176 @@ input, select, textarea {
   padding: 10px 20px;
   font-weight: 500;
 }
+
+/* ==========================================
+   TARJETAS DE EVENTOS (modernas)
+============================================= */
+.ev-card {
+  background: var(--surface);
+  border: 0.5px solid var(--border);
+  border-radius: 16px;
+  padding: 16px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+  position: relative;
+}
+.ev-card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
+  transform: translateY(-2px);
+}
+.ev-card.past {
+  opacity: 0.75;
+}
+.ev-card.expanded {
+  border-color: var(--accent);
+  background: var(--surface2);
+}
+.ev-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 12px;
+}
+.ev-folio {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+}
+.ev-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text1);
+  margin: 4px 0 2px;
+}
+.ev-date {
+  font-size: 12px;
+  color: var(--text3);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.ev-badge {
+  padding: 4px 10px;
+  border-radius: 30px;
+  font-size: 11px;
+  font-weight: 600;
+  background: var(--badge-pend-bg);
+  color: var(--badge-pend-c);
+}
+.ev-badge.realizado {
+  background: var(--badge-done-bg);
+  color: var(--badge-done-c);
+}
+.ev-stats {
+  display: flex;
+  gap: 16px;
+  margin: 12px 0;
+  padding-top: 12px;
+  border-top: 0.5px solid var(--border);
+}
+.ev-stat-item {
+  flex: 1;
+}
+.ev-stat-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  color: var(--text3);
+  letter-spacing: 0.3px;
+}
+.ev-stat-value {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text1);
+}
+.ev-stat-value.saldo {
+  color: var(--badge-pend-c);
+}
+.ev-stat-value.saldo.zero {
+  color: var(--badge-done-c);
+}
+.ev-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+.ev-card:hover .ev-actions {
+  opacity: 1;
+}
+.ev-action-btn {
+  background: transparent;
+  border: 0.5px solid var(--border);
+  border-radius: 30px;
+  padding: 6px 12px;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text2);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.ev-action-btn:hover {
+  background: var(--surface2);
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.ev-action-btn.danger:hover {
+  background: var(--badge-pend-bg);
+  border-color: var(--badge-pend-c);
+  color: var(--badge-pend-c);
+}
+
+/* ==========================================
+   MODAL DE EVENTOS (responsive)
+============================================= */
+.modal.evento .r2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 480px) {
+  .modal.evento .r2 {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .modal.evento .fg {
+    margin-bottom: 4px;
+  }
+  /* Evitar desbordamiento en campos de teléfono */
+  .modal.evento input[type="tel"],
+  .modal.evento input[type="text"],
+  .modal.evento select {
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+}
+
+/* ==========================================
+   PREVENIR ZOOM EN MÓVILES
+============================================= */
+/* Ya está en el meta viewport, pero reforzamos */
+input, select, textarea, button {
+  touch-action: manipulation;
+  font-size: 16px; /* Evita zoom automático en iOS */
+}
+
+/* ==========================================
+   MEJORA EN MODAL DE CLIENTES (responsive)
+============================================= */
+.modal.cliente .r2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+@media (max-width: 480px) {
+  .modal.cliente .r2 {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+}

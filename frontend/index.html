@@ -190,6 +190,110 @@
       </div>
     </div>
 
+    <!-- MODAL EVENTO (crear/editar) -->
+    <div class="modal-backdrop modern" id="modalEvento" onclick="if(event.target===this) closeModal('modalEvento')">
+      <div class="modal modern evento">
+        <div class="modal-title" id="modalEventoTitle">Nuevo evento</div>
+        <input type="hidden" id="editEventoId">
+      
+        <!-- Selector de cliente (con búsqueda) -->
+        <div class="fg">
+          <label class="fl">Cliente</label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <div style="flex: 1; position: relative;">
+              <input class="fi" type="text" id="evClienteSearch" placeholder="Buscar o crear cliente..." autocomplete="off" oninput="buscarClienteParaEvento()">
+              <div class="sdd" id="evClienteDd"></div>
+            </div>
+            <button type="button" class="btn btn-ghost btn-sm" onclick="abrirNuevoClienteDesdeEvento()" title="Crear nuevo cliente">+ Nuevo</button>
+          </div>
+          <div id="evClienteInfo" style="font-size: 12px; color: var(--accent); margin-top: 4px; display: none;"></div>
+        </div>
+      
+        <!-- Campos ocultos para cliente seleccionado/creado -->
+        <input type="hidden" id="evClienteId">
+      
+        <!-- Datos del evento -->
+        <div class="r2">
+          <div class="fg">
+            <label class="fl">Fecha del evento *</label>
+            <input class="fi" type="date" id="evFecha">
+          </div>
+          <div class="fg">
+            <label class="fl">Tipo de evento</label>
+            <select class="fs" id="evTipo">
+              <option value="Boda fiesta">Boda fiesta</option>
+              <option value="Boda civil">Boda civil</option>
+              <option value="XV años">XV años</option>
+              <option value="Cumpleaños">Cumpleaños</option>
+              <option value="Empresarial">Empresarial</option>
+              <option value="Fiesta">Fiesta</option>
+              <option value="Fecha festiva">Fecha festiva</option>
+              <option value="No especificado">No especificado</option>
+            </select>
+          </div>
+        </div>
+      
+        <div class="fg">
+          <label class="fl">Dirección del evento (opcional)</label>
+          <input class="fi" type="text" id="evDir" placeholder="Calle, número, colonia...">
+        </div>
+      
+        <div class="fg">
+          <label class="fl">Observaciones</label>
+          <input class="fi" type="text" id="evObs" placeholder="Notas internas...">
+        </div>
+      
+        <div class="r2">
+          <div class="fg">
+            <label class="fl">Estado</label>
+            <select class="fs" id="evEstado">
+              <option value="Borrador">Borrador</option>
+              <option value="Cotizado">Cotizado</option>
+              <option value="Confirmado">Confirmado</option>
+              <option value="En proceso">En proceso</option>
+              <option value="Entregado">Entregado</option>
+              <option value="Cancelado">Cancelado</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label class="fl">Estado de pago</label>
+            <select class="fs" id="evEPago">
+              <option value="Pendiente">Pendiente</option>
+              <option value="Realizado">Realizado</option>
+            </select>
+          </div>
+        </div>
+      
+        <div class="r2">
+          <div class="fg">
+            <label class="fl">IVA</label>
+            <select class="fs" id="evIva">
+              <option value="No aplica">No aplica</option>
+              <option value="8%">8%</option>
+              <option value="16%">16%</option>
+            </select>
+          </div>
+          <div class="fg">
+            <label class="fl">ISR</label>
+            <select class="fs" id="evIsr">
+              <option value="No aplica">No aplica</option>
+              <option value="ISR 1.25%">ISR 1.25%</option>
+            </select>
+          </div>
+        </div>
+      
+        <div class="fg">
+          <label class="fl">Anticipo recibido</label>
+          <input class="fi" type="number" id="evAnticipo" min="0" step="0.01" placeholder="0.00">
+        </div>
+      
+        <div style="display:flex; gap:8px; justify-content: flex-end; margin-top: 20px;">
+          <button class="btn btn-ghost" onclick="closeModal('modalEvento')">Cancelar</button>
+          <button class="btn btn-accent" onclick="guardarEvento()">Guardar</button>
+        </div>
+      </div>
+    </div>
+
     <!-- CALENDARIO -->
     <div class="section" id="secCalendario">
       <div class="page-header">

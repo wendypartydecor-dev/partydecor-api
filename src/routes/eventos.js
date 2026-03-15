@@ -195,4 +195,22 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   }
 });
 
+// GET /api/eventos/:id
+router.get('/:id', requireAuth, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { data, error } = await supabase
+      .from('v_eventos_completo')
+      .select('*')
+      .eq('id', id)
+      .single();
+    if (error) throw error;
+    if (!data) return res.status(404).json({ error: 'Evento no encontrado' });
+    res.json(data);
+  } catch (e) {
+    console.error('GET evento:', e.message);
+    res.status(500).json({ error: e.message });
+  }
+});
+
 module.exports = router;

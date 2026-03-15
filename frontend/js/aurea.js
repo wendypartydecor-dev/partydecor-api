@@ -443,7 +443,7 @@ function filtrarEventos() {
 function renderEventos(lista) {
   const grid = document.getElementById('evGrid');
   if (!lista.length) {
-    grid.innerHTML = `<div style="text-align:center;padding:48px 20px;color:var(--text3)">Sin eventos</div>`;
+    grid.innerHTML = `<div class="empty-message">No hay eventos</div>`;
     return;
   }
   const hoy = new Date().toISOString().split('T')[0];
@@ -455,33 +455,62 @@ function renderEventos(lista) {
     const total = Number(ev.total) || 0;
     const exp = S.evExpandido === ev.id;
     return `
-    <div class="ev-card${past?' past':''}${exp?' expanded':''}" id="evCard-${ev.id}" onclick="toggleEvento('${ev.id}',${idx})">
-      <div class="ev-card-top">
+    <div class="ev-card${past ? ' past' : ''}${exp ? ' expanded' : ''}" data-id="${ev.id}">
+      <div class="ev-card-top" onclick="toggleEvento('${ev.id}')">
         <div>
           <div class="ev-folio">${esc(ev.id)}</div>
           <div class="ev-name">${esc(ev.cliente)}</div>
-          <div class="ev-date">${esc(ev.fecha)}${ev.tipo ? ' · ' + esc(ev.tipo) : ''}</div>
+          <div class="ev-date">📅 ${esc(ev.fecha)} ${ev.tipo ? ' · ' + esc(ev.tipo) : ''}</div>
         </div>
-        <span class="badge ${pend?'badge-pend':'badge-done'}">${pend?'Pendiente':'Realizado'}</span>
+        <span class="ev-badge ${pend ? '' : 'realizado'}">${pend ? 'Pendiente' : 'Realizado'}</span>
       </div>
-      <div class="ev-totals">
-        <div class="ev-tot-item"><span class="ev-tot-label">Total</span><span class="ev-tot-val">$${fmt(total)}</span></div>
-        <div class="ev-tot-item"><span class="ev-tot-label">Anticipo</span><span class="ev-tot-val">$${fmt(anticipo)}</span></div>
-        <div class="ev-tot-item"><span class="ev-tot-label">Saldo</span><span class="ev-tot-val ${saldo>0?'red':'green'}">$${fmt(saldo)}</span></div>
+      <div class="ev-stats">
+        <div class="ev-stat-item">
+          <div class="ev-stat-label">Total</div>
+          <div class="ev-stat-value">$${fmt(total)}</div>
+        </div>
+        <div class="ev-stat-item">
+          <div class="ev-stat-label">Anticipo</div>
+          <div class="ev-stat-value">$${fmt(anticipo)}</div>
+        </div>
+        <div class="ev-stat-item">
+          <div class="ev-stat-label">Saldo</div>
+          <div class="ev-stat-value saldo${saldo === 0 ? ' zero' : ''}">$${fmt(saldo)}</div>
+        </div>
+      </div>
+      <div class="ev-actions">
+        <button class="ev-action-btn" onclick="abrirEditarEvento('${ev.id}')">✎ Editar</button>
+        <button class="ev-action-btn" onclick="generarPDF('${ev.id}')">📄 PDF</button>
+        <button class="ev-action-btn ${pend ? '' : 'danger'}" onclick="togglePagoEvento('${ev.id}', '${pend ? 'Realizado' : 'Pendiente'}')">
+          ${pend ? '✓ Marcar pagado' : '↻ Marcar pendiente'}
+        </button>
       </div>
       ${exp ? renderEvDetalle(ev) : ''}
     </div>`;
   }).join('');
 }
 
-async function toggleEvento(id, idx) {
+// Función auxiliar para toggle de pago desde la tarjeta
+async function togglePagoEvento(id, nuevoEstado) {
+  try {
+    await api('PATCH', '/eventos/' + id, { e_pago: nuevoEstado });
+    const ev = S.eventos.find(e => e.id === id);
+    if (ev) ev.e_pago = nuevoEstado;
+    renderEventos(S.eventosFilt);
+    toast(`Pago marcado como ${nuevoEstado}`, 'ok');
+  } catch (e) {
+    toast('Error al actualizar pago', 'error');
+  }
+}
+
+async function toggleEvento(id) {
   if (S.evExpandido === id) {
     S.evExpandido = null;
     renderEventos(S.eventosFilt);
     return;
   }
   S.evExpandido = id;
-  const ev = S.eventosFilt[idx];
+  const ev = S.eventosFilt.find(e => e.id === id);
   renderEventos(S.eventosFilt);
   if (!ev._items) {
     try {
@@ -568,7 +597,145 @@ async function generarPDF(id) {
 }
 
 function abrirNuevoEvento() {
-  toast('Próximamente: nuevo evento', 'warn');
+  S.eventoEditId = null;
+  document.getElementById('modalEventoTitle').textContent = 'Nuevo evento';
+  document.getElementById('editEventoId').value = '';
+  document.getElementById('evClienteId').value = '';
+  document.getElementById('evClienteSearch').value = '';
+  document.getElementById('evClienteInfo').style.display = 'none';
+  document.getElementById('evFecha').value = '';
+  document.getElementById('evTipo').value = 'No especificado';
+  document.getElementById('evDir').value = '';
+  document.getElementById('evObs').value = '';
+  document.getElementById('evEstado').value = 'Borrador';
+  document.getElementById('evEPago').value = 'Pendiente';
+  document.getElementById('evIva').value = 'No aplica';
+  document.getElementById('evIsr').value = 'No aplica';
+  document.getElementById('evAnticipo').value = '';
+  openModal('modalEvento');
+}
+
+async function abrirEditarEvento(id) {
+  try {
+    const ev = await api('GET', '/eventos/' + id);
+    S.eventoEditId = id;
+    document.getElementById('modalEventoTitle').textContent = 'Editar evento';
+    document.getElementById('editEventoId').value = id;
+    document.getElementById('evClienteId').value = ev.id_cli || '';
+    document.getElementById('evClienteSearch').value = ev.cli || '';
+    document.getElementById('evClienteInfo').textContent = 'Cliente cargado';
+    document.getElementById('evClienteInfo').style.display = 'block';
+    document.getElementById('evFecha').value = ev.f_ev || '';
+    document.getElementById('evTipo').value = ev.tipo || 'No especificado';
+    document.getElementById('evDir').value = ev.dir || '';
+    document.getElementById('evObs').value = ev.obs || '';
+    document.getElementById('evEstado').value = ev.estado || 'Borrador';
+    document.getElementById('evEPago').value = ev.e_pago || 'Pendiente';
+    document.getElementById('evIva').value = ev.iva || 'No aplica';
+    document.getElementById('evIsr').value = ev.isr || 'No aplica';
+    document.getElementById('evAnticipo').value = ev.anticipo || '';
+    openModal('modalEvento');
+  } catch (e) {
+    toast('Error al cargar evento', 'error');
+  }
+}
+
+function buscarClienteParaEvento() {
+  const q = document.getElementById('evClienteSearch').value.trim().toLowerCase();
+  const dd = document.getElementById('evClienteDd');
+  if (!q) { dd.classList.remove('open'); return; }
+  const resultados = S.clientes.filter(c => 
+    c.nombre.toLowerCase().includes(q) || c.tel1.includes(q)
+  ).slice(0, 5);
+  if (!resultados.length) {
+    dd.innerHTML = `<div class="empty-dd">No hay clientes. Puedes crear uno nuevo.</div>`;
+    dd.classList.add('open');
+    return;
+  }
+  dd.innerHTML = resultados.map(c => `
+    <div class="ddi" onclick="seleccionarClienteParaEvento('${c.id}', '${esc(c.nombre)}')">
+      <div>
+        <div class="ddi-name">${esc(c.nombre)}</div>
+        <div class="ddi-meta">${esc(c.tel1)}</div>
+      </div>
+    </div>
+  `).join('');
+  dd.classList.add('open');
+}
+
+function seleccionarClienteParaEvento(id, nombre) {
+  document.getElementById('evClienteId').value = id;
+  document.getElementById('evClienteSearch').value = nombre;
+  document.getElementById('evClienteInfo').textContent = 'Cliente seleccionado';
+  document.getElementById('evClienteInfo').style.display = 'block';
+  cerrarDd('evClienteDd');
+}
+
+function abrirNuevoClienteDesdeEvento() {
+  cerrarDd('evClienteDd');
+  abrirNuevoCliente(); // del módulo clientes
+  // Al guardar cliente, se debe seleccionar automáticamente
+  // Esto requiere modificar guardarCliente para que, si se llama desde evento, actualice el campo.
+  // Por ahora, simplemente abrimos el modal y el usuario deberá volver a buscar.
+}
+
+async function guardarEvento() {
+  const id = document.getElementById('editEventoId').value;
+  const clienteId = document.getElementById('evClienteId').value;
+  const clienteNombre = document.getElementById('evClienteSearch').value.trim();
+  const fecha = document.getElementById('evFecha').value;
+  const tipo = document.getElementById('evTipo').value;
+  const dir = document.getElementById('evDir').value.trim();
+  const obs = document.getElementById('evObs').value.trim();
+  const estado = document.getElementById('evEstado').value;
+  const ePago = document.getElementById('evEPago').value;
+  const iva = document.getElementById('evIva').value;
+  const isr = document.getElementById('evIsr').value;
+  const anticipo = parseFloat(document.getElementById('evAnticipo').value) || 0;
+
+  if (!clienteNombre && !clienteId) {
+    toast('Debes seleccionar o crear un cliente', 'warn');
+    return;
+  }
+  if (!fecha) {
+    toast('La fecha del evento es obligatoria', 'warn');
+    return;
+  }
+
+  const datos = {
+    fecha,
+    tipo,
+    dir,
+    obs,
+    estado,
+    e_pago: ePago,
+    iva,
+    isr,
+    anticipo
+  };
+
+  // Si hay clienteId, usarlo; si no, crear cliente con los datos del nombre (y pedir teléfono)
+  if (clienteId) {
+    datos.id_cliente = clienteId;
+  } else {
+    // Aquí deberíamos pedir teléfono, pero por ahora asumimos que el usuario usó el buscador
+    toast('Por favor, selecciona un cliente de la lista o créalo primero', 'warn');
+    return;
+  }
+
+  try {
+    if (id) {
+      await api('PATCH', '/eventos/' + id, datos);
+      toast('Evento actualizado', 'ok');
+    } else {
+      await api('POST', '/eventos', { ...datos, nombre: clienteNombre }); // el backend espera nombre
+      toast('Evento creado', 'ok');
+    }
+    closeModal('modalEvento');
+    cargarEventos();
+  } catch (e) {
+    toast('Error: ' + e.message, 'error');
+  }
 }
 
 /* ==========================================
