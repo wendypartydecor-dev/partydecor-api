@@ -1127,6 +1127,7 @@ input, select, textarea {
   border-radius: 0;
   padding: 8px 0;
   font-size: 15px;
+  color: var(--text1);
   outline: none;
   width: 100%;
 }
@@ -1606,4 +1607,18 @@ input, select, textarea {
 @media (max-width: 480px) {
   .row-2 { grid-template-columns: 1fr; }
   .field-input, .field-select { font-size: 16px; }
+}
+
+/* Garantía: todos los inputs/selects en modales usan variables del tema */
+.modal input, .modal select, .modal textarea {
+  color: var(--text1);
+  background: var(--input);
+}
+.modal-backdrop input, .modal-backdrop select, .modal-backdrop textarea {
+  color: var(--text1);
+}
+/* Inputs con border-bottom (modal moderno) */
+.modal.modern input, .modal.modern select {
+  color: var(--text1);
+  background: transparent;
 }
