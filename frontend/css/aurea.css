@@ -17,6 +17,9 @@ html, body {
   -webkit-font-smoothing: antialiased;
   transition: background var(--trans), color var(--trans);
 }
+body.modal-open {
+  overflow: hidden;
+}
 
 button {
   font-family: var(--font);
@@ -69,8 +72,8 @@ input, select, textarea {
 }
 
 .login-logo img {
-  width: 80px;
-  height: 80px;
+  width: 64px;
+  height: 64px;
   object-fit: contain;
   filter: var(--logo-filter);
 }
@@ -457,8 +460,8 @@ input, select, textarea {
   text-decoration: none;
 }
 .topbar-logo img {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   object-fit: contain;
   filter: var(--logo-filter);
 }
@@ -1039,7 +1042,7 @@ input, select, textarea {
   inset: 0;
   background: rgba(0,0,0,0.5);
   z-index: 200;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   padding: 0;
 }
@@ -1047,17 +1050,29 @@ input, select, textarea {
   display: flex;
   animation: fadeIn 0.15s ease;
 }
+
 .modal {
   background: var(--surface);
-  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  border-radius: var(--r-lg);
   width: 100%;
   max-width: 540px;
   max-height: 90vh;
   overflow-y: auto;
   animation: slideUp 0.25s ease;
   padding: 20px;
-  border-top: 0.5px solid var(--border);
+  border: 0.5px solid var(--border);
+  box-shadow: var(--shadow);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
 }
+.modal::-webkit-scrollbar {
+  width: 4px;
+}
+.modal::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 4px;
+}
+
 .modal-handle {
   width: 36px;
   height: 4px;
@@ -1070,6 +1085,116 @@ input, select, textarea {
   font-size: 18px;
   color: var(--text1);
   margin-bottom: 18px;
+}
+
+/* Modal moderno (Apple/Instagram) */
+.modal-backdrop.modern {
+  backdrop-filter: blur(8px);
+  background: rgba(0,0,0,0.3);
+}
+.modal.modern {
+  background: var(--surface);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  max-width: 400px;
+  width: 90%;
+  margin: 0 auto;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+.modal.modern .modal-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: var(--text1);
+}
+.modal.modern .fg {
+  margin-bottom: 16px;
+}
+.modal.modern .fl {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text2);
+  margin-bottom: 4px;
+  display: block;
+}
+.modal.modern .fi,
+.modal.modern .fs {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 8px 0;
+  font-size: 15px;
+  outline: none;
+  width: 100%;
+}
+.modal.modern .fi:focus,
+.modal.modern .fs:focus {
+  border-bottom-color: var(--accent);
+}
+.modal.modern .btn {
+  border-radius: 30px;
+  padding: 10px 20px;
+  font-weight: 500;
+}
+
+/* Dropdown de búsqueda */
+.sdd {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  max-height: 50vh;
+  overflow-y: auto;
+  z-index: 1000;
+  display: none;
+}
+.sdd.open {
+  display: block;
+}
+.sdd .ddi {
+  padding: 10px 12px;
+  color: var(--text1);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  transition: background 0.1s;
+}
+.sdd .ddi:hover {
+  background: var(--surface2);
+}
+.sdd .ddi-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text1);
+}
+.sdd .ddi-meta {
+  font-size: 11px;
+  color: var(--text2);
+  margin-top: 2px;
+}
+.sdd .empty-dd {
+  padding: 12px;
+  color: var(--text3);
+  text-align: center;
+  font-size: 13px;
+}
+
+/* Mensaje vacío centrado */
+.empty-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  width: 100%;
+  color: var(--text3);
+  font-size: 14px;
+  text-align: center;
 }
 
 /* ==========================================
@@ -1159,6 +1284,10 @@ input, select, textarea {
   .theme-grid {
     grid-template-columns: repeat(2, 1fr);
   }
+  .modal.modern .r2 {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
 }
 @media (min-width: 1100px) {
   .sidebar {
@@ -1222,457 +1351,4 @@ input, select, textarea {
 }
 @keyframes spin {
   to { transform: rotate(360deg); }
-}
-/* ==========================================
-   CLIENTES
-============================================= */
-.clientes-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-  gap: 12px;
-  margin-top: 12px;
-}
-.cliente-card {
-  background: var(--surface);
-  border: 0.5px solid var(--border);
-  border-radius: var(--r);
-  padding: 16px;
-  transition: all var(--trans);
-}
-.cliente-card:hover {
-  border-color: var(--accent);
-  box-shadow: var(--shadow);
-}
-.cliente-nombre {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--text1);
-  margin-bottom: 4px;
-}
-.cliente-telefono {
-  font-size: 12px;
-  color: var(--text2);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  margin-bottom: 2px;
-}
-.cliente-meta {
-  font-size: 11px;
-  color: var(--text3);
-  display: flex;
-  gap: 8px;
-  margin-top: 8px;
-  padding-top: 8px;
-  border-top: 0.5px solid var(--border);
-}
-.cliente-tipo, .cliente-fuente {
-  background: var(--surface2);
-  padding: 2px 8px;
-  border-radius: var(--r-pill);
-}
-.cliente-actions {
-  display: flex;
-  gap: 6px;
-  margin-top: 10px;
-}
-.cliente-actions button {
-  padding: 4px 8px;
-  font-size: 11px;
-}
-
-/* ==========================================
-   MODAL MODERNO
-============================================= */
-.modal.modern {
-  background: var(--surface);
-  border-radius: 24px;
-  padding: 0;
-  max-width: 500px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-  border: 0.5px solid var(--border2);
-}
-.modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 20px 24px;
-  border-bottom: 0.5px solid var(--border);
-}
-.modal-header h2 {
-  font-family: var(--font-serif);
-  font-size: 20px;
-  font-weight: 500;
-  color: var(--text1);
-}
-.modal-close {
-  background: transparent;
-  border: none;
-  color: var(--text2);
-  font-size: 20px;
-  cursor: pointer;
-  width: 32px;
-  height: 32px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  transition: background 0.2s;
-}
-.modal-close:hover {
-  background: var(--surface2);
-}
-.modal-body {
-  padding: 24px;
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
-}
-.field-group {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.field-label {
-  font-size: 13px;
-  font-weight: 500;
-  color: var(--text2);
-  letter-spacing: 0.3px;
-}
-.field-label .required {
-  color: var(--accent);
-  margin-left: 2px;
-}
-.field-input, .field-select {
-  background: var(--surface2);
-  border: 0.5px solid var(--border2);
-  border-radius: 14px;
-  padding: 12px 16px;
-  font-size: 15px;
-  color: var(--text1);
-  outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
-}
-.field-input:focus, .field-select:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--chip-on-bg);
-}
-.field-select {
-  appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 16px center;
-  padding-right: 40px;
-}
-.row-2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-.modal-footer {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  padding: 16px 24px 24px;
-  border-top: 0.5px solid var(--border);
-}
-
-.clientes-grid .empty-message {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 200px;        /* Altura mínima para que se note el centrado vertical */
-  width: 100%;
-  color: var(--text3);
-  font-size: 14px;
-  text-align: center;
-  grid-column: 1 / -1;      /* Ocupa todo el ancho del grid */
-}
-
-/* ==========================================
-   MODAL MODERNO (tipo Apple/Instagram)
-============================================= */
-.modal-backdrop.modern {
-  backdrop-filter: blur(8px);
-  background: rgba(0,0,0,0.3);
-}
-.modal.modern {
-  background: var(--surface);
-  border-radius: 24px;
-  padding: 24px;
-  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-  max-width: 400px;
-  width: 90%;
-  margin: 0 auto;
-}
-.modal.modern .modal-title {
-  font-size: 20px;
-  font-weight: 600;
-  margin-bottom: 20px;
-  color: var(--text1);
-}
-.modal.modern .fg {
-  margin-bottom: 16px;
-}
-.modal.modern .fl {
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text2);
-  margin-bottom: 4px;
-  display: block;
-}
-.modal.modern .fi,
-.modal.modern .fs {
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid var(--border);
-  border-radius: 0;
-  padding: 8px 0;
-  font-size: 15px;
-  outline: none;
-  width: 100%;
-}
-.modal.modern .fi:focus,
-.modal.modern .fs:focus {
-  border-bottom-color: var(--accent);
-}
-.modal.modern .btn {
-  border-radius: 30px;
-  padding: 10px 20px;
-  font-weight: 500;
-}
-
-/* ==========================================
-   TARJETAS DE EVENTOS (modernas)
-============================================= */
-.ev-card {
-  background: var(--surface);
-  border: 0.5px solid var(--border);
-  border-radius: 16px;
-  padding: 16px;
-  transition: all 0.2s ease;
-  cursor: pointer;
-  position: relative;
-}
-.ev-card:hover {
-  border-color: var(--accent);
-  box-shadow: 0 8px 20px rgba(0,0,0,0.06);
-  transform: translateY(-2px);
-}
-.ev-card.past {
-  opacity: 0.75;
-}
-.ev-card.expanded {
-  border-color: var(--accent);
-  background: var(--surface2);
-}
-.ev-card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-}
-.ev-folio {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--accent);
-  letter-spacing: 0.3px;
-  text-transform: uppercase;
-}
-.ev-name {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--text1);
-  margin: 4px 0 2px;
-}
-.ev-date {
-  font-size: 12px;
-  color: var(--text3);
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-.ev-badge {
-  padding: 4px 10px;
-  border-radius: 30px;
-  font-size: 11px;
-  font-weight: 600;
-  background: var(--badge-pend-bg);
-  color: var(--badge-pend-c);
-}
-.ev-badge.realizado {
-  background: var(--badge-done-bg);
-  color: var(--badge-done-c);
-}
-.ev-stats {
-  display: flex;
-  gap: 16px;
-  margin: 12px 0;
-  padding-top: 12px;
-  border-top: 0.5px solid var(--border);
-}
-.ev-stat-item {
-  flex: 1;
-}
-.ev-stat-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  color: var(--text3);
-  letter-spacing: 0.3px;
-}
-.ev-stat-value {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text1);
-}
-.ev-stat-value.saldo {
-  color: var(--badge-pend-c);
-}
-.ev-stat-value.saldo.zero {
-  color: var(--badge-done-c);
-}
-.ev-actions {
-  display: flex;
-  gap: 8px;
-  margin-top: 12px;
-  opacity: 0.7;
-  transition: opacity 0.2s;
-}
-.ev-card:hover .ev-actions {
-  opacity: 1;
-}
-.ev-action-btn {
-  background: transparent;
-  border: 0.5px solid var(--border);
-  border-radius: 30px;
-  padding: 6px 12px;
-  font-size: 11px;
-  font-weight: 500;
-  color: var(--text2);
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.ev-action-btn:hover {
-  background: var(--surface2);
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.ev-action-btn.danger:hover {
-  background: var(--badge-pend-bg);
-  border-color: var(--badge-pend-c);
-  color: var(--badge-pend-c);
-}
-
-/* ==========================================
-   MODAL DE EVENTOS (responsive)
-============================================= */
-.modal.evento .r2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-@media (max-width: 480px) {
-  .modal.evento .r2 {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-  .modal.evento .fg {
-    margin-bottom: 4px;
-  }
-  /* Evitar desbordamiento en campos de teléfono */
-  .modal.evento input[type="tel"],
-  .modal.evento input[type="text"],
-  .modal.evento select {
-    max-width: 100%;
-    box-sizing: border-box;
-  }
-}
-
-/* ==========================================
-   PREVENIR ZOOM EN MÓVILES
-============================================= */
-/* Ya está en el meta viewport, pero reforzamos */
-input, select, textarea, button {
-  touch-action: manipulation;
-  font-size: 16px; /* Evita zoom automático en iOS */
-}
-
-/* ==========================================
-   MEJORA EN MODAL DE CLIENTES (responsive)
-============================================= */
-.modal.cliente .r2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-@media (max-width: 480px) {
-  .modal.cliente .r2 {
-    grid-template-columns: 1fr;
-    gap: 8px;
-  }
-}
-/* ==========================================
-   MEJORAS EN MODAL DE EVENTOS
-============================================= */
-.modal.modern {
-  max-height: 90vh;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
-}
-.modal.modern::-webkit-scrollbar {
-  width: 4px;
-}
-.modal.modern::-webkit-scrollbar-thumb {
-  background: var(--border2);
-  border-radius: 4px;
-}
-
-/* Estilos para dropdown de búsqueda de clientes */
-.sdd {
-  background: var(--surface);
-  border: 1px solid var(--border2);
-  border-radius: var(--r-sm);
-  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
-  z-index: 1000;
-}
-.sdd .ddi {
-  padding: 10px 12px;
-  color: var(--text1);
-  border-bottom: 1px solid var(--border);
-  cursor: pointer;
-}
-.sdd .ddi:hover {
-  background: var(--surface2);
-}
-.sdd .empty-dd {
-  padding: 12px;
-  color: var(--text3);
-  text-align: center;
-  font-size: 13px;
-}
-
-/* Mensaje vacío centrado */
-.empty-message {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 200px;
-  width: 100%;
-  color: var(--text3);
-  font-size: 14px;
-  text-align: center;
-}
-
-/* Ajuste para inputs de número (anticipo) */
-input[type="number"] {
-  -moz-appearance: textfield;
-}
-input[type="number"]::-webkit-outer-spin-button,
-input[type="number"]::-webkit-inner-spin-button {
-  -webkit-appearance: none;
-  margin: 0;
 }
