@@ -300,7 +300,7 @@ function cerrarSesion() {
 ============================================= */
 async function cargarClientes() {
   try {
-    const data = await api('GET', '/listas/clientes');
+    const data = await api('GET', '/clientes');
     S.clientes = data || [];
     renderClientes();
   } catch(e) {
