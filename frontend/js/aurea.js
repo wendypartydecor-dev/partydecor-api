@@ -312,7 +312,7 @@ function renderClientes() {
   const container = document.getElementById('clientesGrid');
   if (!container) return;
   if (!S.clientes.length) {
-    container.innerHTML = ''; // Vacío, el CSS mostrará el mensaje centrado
+    container.innerHTML = '<div class="empty-message">No hay clientes registrados</div>'; 
     return;
   }
   container.innerHTML = S.clientes.map(c => `
