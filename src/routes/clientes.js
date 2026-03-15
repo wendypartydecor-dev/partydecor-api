@@ -21,6 +21,7 @@ router.get('/', requireAuth, async (req, res) => {
       .from('clientes')
       .select('*')
       .eq('activo', true)
+      .eq('id_empresa', req.user.empresa_id)  // ← filtrar por empresa
       .order('nombre');
     if (error) throw error;
     res.json(data);
@@ -39,6 +40,7 @@ router.get('/:id', requireAuth, async (req, res) => {
       .select('*')
       .eq('id', id)
       .eq('activo', true)
+      .eq('id_empresa', req.user.empresa_id)
       .single();
     if (error) throw error;
     if (!data) return res.status(404).json({ error: 'Cliente no encontrado' });
@@ -67,7 +69,8 @@ router.post('/', requireAuth, async (req, res) => {
         tipo: tipo || 'Particular',
         fuente: fuente || 'Sin datos',
         dir: dir || '',
-        activo: true
+        activo: true,
+        id_empresa: req.user.empresa_id  // ← asignar empresa
       })
       .select()
       .single();
@@ -83,6 +86,18 @@ router.post('/', requireAuth, async (req, res) => {
 router.patch('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Verificar que el cliente pertenezca a la empresa del usuario
+    const { data: existing } = await supabase
+      .from('clientes')
+      .select('id')
+      .eq('id', id)
+      .eq('id_empresa', req.user.empresa_id)
+      .single();
+    if (!existing) {
+      return res.status(404).json({ error: 'Cliente no encontrado o no pertenece a tu empresa' });
+    }
+
     const { nombre, tel1, tel2, tipo, fuente, dir } = req.body;
     const updates = {};
     if (nombre !== undefined) updates.nombre = nombre;
@@ -100,11 +115,10 @@ router.patch('/:id', requireAuth, async (req, res) => {
       .from('clientes')
       .update(updates)
       .eq('id', id)
-      .eq('activo', true)
+      .eq('id_empresa', req.user.empresa_id)
       .select()
       .single();
     if (error) throw error;
-    if (!data) return res.status(404).json({ error: 'Cliente no encontrado' });
     res.json(data);
   } catch (e) {
     console.error('PATCH cliente:', e.message);
@@ -116,10 +130,23 @@ router.patch('/:id', requireAuth, async (req, res) => {
 router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
+
+    // Verificar pertenencia
+    const { data: existing } = await supabase
+      .from('clientes')
+      .select('id')
+      .eq('id', id)
+      .eq('id_empresa', req.user.empresa_id)
+      .single();
+    if (!existing) {
+      return res.status(404).json({ error: 'Cliente no encontrado o no pertenece a tu empresa' });
+    }
+
     const { error } = await supabase
       .from('clientes')
       .update({ activo: false })
-      .eq('id', id);
+      .eq('id', id)
+      .eq('id_empresa', req.user.empresa_id);
     if (error) throw error;
     res.json({ ok: true });
   } catch (e) {
