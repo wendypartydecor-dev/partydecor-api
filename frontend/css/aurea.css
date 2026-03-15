@@ -1376,3 +1376,69 @@ input, select, textarea {
   padding: 16px 24px 24px;
   border-top: 0.5px solid var(--border);
 }
+/* ==========================================
+   CLIENTES - mensaje vacío centrado
+============================================= */
+.clientes-grid:empty::before {
+  content: "No hay clientes registrados";
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 200px;
+  width: 100%;
+  color: var(--text3);
+  font-size: 14px;
+}
+
+/* ==========================================
+   MODAL MODERNO (tipo Apple/Instagram)
+============================================= */
+.modal-backdrop.modern {
+  backdrop-filter: blur(8px);
+  background: rgba(0,0,0,0.3);
+}
+.modal.modern {
+  background: var(--surface);
+  border-radius: 24px;
+  padding: 24px;
+  box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+  max-width: 400px;
+  width: 90%;
+  margin: 0 auto;
+}
+.modal.modern .modal-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  color: var(--text1);
+}
+.modal.modern .fg {
+  margin-bottom: 16px;
+}
+.modal.modern .fl {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text2);
+  margin-bottom: 4px;
+  display: block;
+}
+.modal.modern .fi,
+.modal.modern .fs {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  padding: 8px 0;
+  font-size: 15px;
+  outline: none;
+  width: 100%;
+}
+.modal.modern .fi:focus,
+.modal.modern .fs:focus {
+  border-bottom-color: var(--accent);
+}
+.modal.modern .btn {
+  border-radius: 30px;
+  padding: 10px 20px;
+  font-weight: 500;
+}

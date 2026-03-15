@@ -130,15 +130,18 @@ function closeSidebar() {
 /* ==========================================
    LOGIN
 ============================================= */
-function mostrarFormPass() {
-  document.getElementById('loginFormPass').style.display = 'flex';
-  document.getElementById('loginFormPin').style.display = 'none';
-}
-function mostrarFormPin() {
-  document.getElementById('loginFormPass').style.display = 'none';
-  document.getElementById('loginFormPin').style.display = 'flex';
-  S.pinBuf = '';
-  updatePinDots();
+function switchLoginTab(tab) {
+  const passForm = document.getElementById('loginFormPass');
+  const pinForm = document.getElementById('loginFormPin');
+  if (tab === 'pass') {
+    passForm.style.display = 'flex';
+    pinForm.style.display = 'none';
+  } else {
+    passForm.style.display = 'none';
+    pinForm.style.display = 'flex';
+    S.pinBuf = '';
+    updatePinDots();
+  }
 }
 
 function updatePinDots() {
@@ -169,7 +172,6 @@ async function doPinLogin() {
   }
 }
 
-// Si usas usuario/contraseña (no implementado en el HTML actual)
 async function doLogin() {
   const user = document.getElementById('loginUser').value.trim();
   const pass = document.getElementById('loginPass').value;
@@ -191,12 +193,10 @@ async function doLogin() {
 function procesarLogin(res) {
   S.usuario = res.usuario;
   if (res.token_temp) {
-    // Múltiples empresas
     localStorage.setItem('pd_token_temp', res.token_temp);
-    S.empresas = res.empresas || [];  // CORREGIDO: usar res.empresas
+    S.empresas = res.empresas; // CORREGIDO: viene en raíz
     mostrarSelectorEmpresa(S.empresas);
   } else {
-    // Una sola empresa
     S.token = res.token;
     localStorage.setItem('pd_token', res.token);
     localStorage.setItem('pd_user', JSON.stringify(res.usuario));
@@ -235,7 +235,6 @@ function mostrarSelectorEmpresa(empresas) {
   }).join('');
 }
 
-// En seleccionarEmpresa(idx)
 async function seleccionarEmpresa(idx) {
   const empresa = S.empresas[idx];
   if (!empresa) return;
@@ -293,7 +292,7 @@ function cerrarSesion() {
   localStorage.removeItem('pd_empresa');
   localStorage.removeItem('pd_token_temp');
   showScreen('screenLogin');
-  mostrarFormPass();
+  switchLoginTab('pass');
 }
 
 /* ==========================================
@@ -313,7 +312,7 @@ function renderClientes() {
   const container = document.getElementById('clientesGrid');
   if (!container) return;
   if (!S.clientes.length) {
-    container.innerHTML = `<div style="text-align:center;padding:48px;color:var(--text3)">No hay clientes registrados</div>`;
+    container.innerHTML = ''; // Vacío, el CSS mostrará el mensaje centrado
     return;
   }
   container.innerHTML = S.clientes.map(c => `
@@ -334,10 +333,31 @@ function renderClientes() {
 }
 
 function abrirNuevoCliente() {
-  toast('Función en desarrollo', 'warn');
+  S.clienteEditId = null;
+  document.getElementById('modalClienteTitle').textContent = 'Nuevo cliente';
+  document.getElementById('editClienteId').value = '';
+  document.getElementById('editClienteNombre').value = '';
+  document.getElementById('editClienteTel1').value = '';
+  document.getElementById('editClienteTel2').value = '';
+  document.getElementById('editClienteTipo').value = 'Particular';
+  document.getElementById('editClienteFuente').value = 'Sin datos';
+  document.getElementById('editClienteDir').value = '';
+  openModal('modalCliente');
 }
+
 function editarCliente(id) {
-  toast('Función en desarrollo', 'warn');
+  const c = S.clientes.find(x => x.id === id);
+  if (!c) return;
+  S.clienteEditId = id;
+  document.getElementById('modalClienteTitle').textContent = 'Editar cliente';
+  document.getElementById('editClienteId').value = c.id;
+  document.getElementById('editClienteNombre').value = c.nombre;
+  document.getElementById('editClienteTel1').value = c.tel1 || '';
+  document.getElementById('editClienteTel2').value = c.tel2 || '';
+  document.getElementById('editClienteTipo').value = c.tipo || 'Particular';
+  document.getElementById('editClienteFuente').value = c.fuente || 'Sin datos';
+  document.getElementById('editClienteDir').value = c.dir || '';
+  openModal('modalCliente');
 }
 
 async function guardarCliente() {
@@ -372,11 +392,8 @@ async function guardarCliente() {
 function verEventosCliente(id) {
   navTo('eventos');
   document.getElementById('evSearch').value = '';
-  filtrarEventosPorCliente(id);
+  // Aquí se podría filtrar por cliente, pero por ahora solo navegamos
   toast('Filtrando eventos del cliente...', 'ok');
-}
-function filtrarEventosPorCliente(id) {
-  // Implementar si se desea filtrar por cliente
 }
 
 /* ==========================================
@@ -588,13 +605,12 @@ function closeModal(id) {
 ============================================= */
 function init() {
   loadTheme();
-  // Auto-login si hay token guardado
   const savedToken = localStorage.getItem('pd_token');
   const savedUser = localStorage.getItem('pd_user');
   const savedEmpresa = localStorage.getItem('pd_empresa');
   if (savedToken && savedUser) {
     try {
-      S.token = savedToken; 
+      S.token = savedToken;
       S.usuario = JSON.parse(savedUser);
       if (savedEmpresa) S.empresa = JSON.parse(savedEmpresa);
       afterLogin();
@@ -602,4 +618,3 @@ function init() {
   }
 }
 document.addEventListener('DOMContentLoaded', init);
-

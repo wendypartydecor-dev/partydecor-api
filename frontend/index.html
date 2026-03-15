@@ -35,7 +35,7 @@
       </div>
       <!-- Logo empresa (sesión guardada) -->
       <div id="logoEmpresa" style="display:none;flex-direction:column;align-items:center;gap:10px">
-        <img id="loginLogoImg" src="" alt="Logo" style="width:80px;height:80px;object-fit:contain;border-radius:12px">
+        <img id="loginLogoImg" src="" alt="Logo" style="width:100px; height:100px; object-fit:contain; border-radius:12px">
         <span class="login-empresa-nombre" id="loginEmpresaNombre"></span>
       </div>
     </div>
@@ -79,7 +79,7 @@
           <button class="pin-btn wide" onclick="pinPress('0')">0</button>
           <button class="pin-btn del" onclick="pinDel()">⌫</button>
         </div>
-        <button class="btn-link-muted" onclick="mostrarFormPass()">
+        <button class="btn-link-muted" onclick="switchLoginTab('pass')">
           Usar contraseña
         </button>
       </div>
@@ -114,7 +114,7 @@
       <span></span><span></span><span></span>
     </button>
     <a class="topbar-logo" href="#" onclick="return false">
-      <img id="appLogo" src="" alt="Logo">
+      <img id="appLogo" src="" alt="Logo" style="width:36px; height:36px; object-fit:contain;">
       <span class="topbar-name" id="appEmpresaNombre">Party Decor</span>
     </a>
     <span class="topbar-empresa" id="appEmpresaBadge" style="display:none"></span>
@@ -231,55 +231,59 @@
       </div>
     </div>
 
-    <!-- MODAL CLIENTE (para crear/editar) -->
+    <!-- MODAL CLIENTE (moderno) -->
     <div class="modal-backdrop" id="modalCliente" onclick="if(event.target===this) closeModal('modalCliente')">
-      <div class="modal">
-        <div class="modal-handle"></div>
-        <div class="modal-title" id="modalClienteTitle">Nuevo cliente</div>
-        <input type="hidden" id="editClienteId">
-        <div class="fg">
-          <label class="fl">Nombre completo *</label>
-          <input class="fi" type="text" id="editClienteNombre" placeholder="Ej: Juan Pérez">
+      <div class="modal modal-moderno">
+        <div class="modal-header">
+          <h2 class="modal-title" id="modalClienteTitle">Nuevo cliente</h2>
+          <button class="modal-close" onclick="closeModal('modalCliente')">✕</button>
         </div>
-        <div class="r2">
-          <div class="fg">
-            <label class="fl">Teléfono principal *</label>
-            <input class="fi" type="tel" id="editClienteTel1" placeholder="10 dígitos">
+        <div class="modal-body">
+          <input type="hidden" id="editClienteId">
+          <div class="field-group">
+            <label class="field-label">Nombre completo <span class="required">*</span></label>
+            <input class="field-input" type="text" id="editClienteNombre" placeholder="Ej: Juan Pérez">
           </div>
-          <div class="fg">
-            <label class="fl">Teléfono secundario</label>
-            <input class="fi" type="tel" id="editClienteTel2" placeholder="Opcional">
+          <div class="row-2">
+            <div class="field-group">
+              <label class="field-label">Teléfono principal <span class="required">*</span></label>
+              <input class="field-input" type="tel" id="editClienteTel1" placeholder="10 dígitos">
+            </div>
+            <div class="field-group">
+              <label class="field-label">Teléfono secundario</label>
+              <input class="field-input" type="tel" id="editClienteTel2" placeholder="Opcional">
+            </div>
+          </div>
+          <div class="row-2">
+            <div class="field-group">
+              <label class="field-label">Tipo de cliente</label>
+              <select class="field-select" id="editClienteTipo">
+                <option>Particular</option>
+                <option>Empresa</option>
+                <option>Gobierno</option>
+                <option>Decorador/a</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label class="field-label">Fuente</label>
+              <select class="field-select" id="editClienteFuente">
+                <option>Sin datos</option>
+                <option>Instagram</option>
+                <option>Facebook</option>
+                <option>WhatsApp</option>
+                <option>Recomendado</option>
+                <option>Otro</option>
+              </select>
+            </div>
+          </div>
+          <div class="field-group">
+            <label class="field-label">Dirección</label>
+            <input class="field-input" type="text" id="editClienteDir" placeholder="Opcional">
           </div>
         </div>
-        <div class="r2">
-          <div class="fg">
-            <label class="fl">Tipo de cliente</label>
-            <select class="fs" id="editClienteTipo">
-              <option>Particular</option>
-              <option>Empresa</option>
-              <option>Gobierno</option>
-              <option>Decorador/a</option>
-            </select>
-          </div>
-          <div class="fg">
-            <label class="fl">Fuente</label>
-            <select class="fs" id="editClienteFuente">
-              <option>Sin datos</option>
-              <option>Instagram</option>
-              <option>Facebook</option>
-              <option>WhatsApp</option>
-              <option>Recomendado</option>
-              <option>Otro</option>
-            </select>
-          </div>
-        </div>
-        <div class="fg">
-          <label class="fl">Dirección</label>
-          <input class="fi" type="text" id="editClienteDir" placeholder="Opcional">
-        </div>
-        <div style="display:flex;gap:8px;margin-top:16px">
+        <div class="modal-footer">
           <button class="btn btn-ghost" onclick="closeModal('modalCliente')">Cancelar</button>
-          <button class="btn btn-accent" onclick="guardarCliente()">Guardar</button>
+          <button class="btn btn-accent" onclick="guardarCliente()">Guardar cliente</button>
         </div>
       </div>
     </div>
