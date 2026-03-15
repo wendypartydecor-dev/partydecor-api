@@ -193,7 +193,7 @@ function procesarLogin(res) {
   if (res.token_temp) {
     // Múltiples empresas
     localStorage.setItem('pd_token_temp', res.token_temp);
-    S.empresas = res.empresas || [];
+    S.empresas = res.empresas || [];  // CORREGIDO: usar res.empresas
     mostrarSelectorEmpresa(S.empresas);
   } else {
     // Una sola empresa
@@ -235,6 +235,7 @@ function mostrarSelectorEmpresa(empresas) {
   }).join('');
 }
 
+// En seleccionarEmpresa(idx)
 async function seleccionarEmpresa(idx) {
   const empresa = S.empresas[idx];
   if (!empresa) return;
@@ -333,31 +334,10 @@ function renderClientes() {
 }
 
 function abrirNuevoCliente() {
-  S.clienteEditId = null;
-  document.getElementById('modalClienteTitle').textContent = 'Nuevo cliente';
-  document.getElementById('editClienteId').value = '';
-  document.getElementById('editClienteNombre').value = '';
-  document.getElementById('editClienteTel1').value = '';
-  document.getElementById('editClienteTel2').value = '';
-  document.getElementById('editClienteTipo').value = 'Particular';
-  document.getElementById('editClienteFuente').value = 'Sin datos';
-  document.getElementById('editClienteDir').value = '';
-  openModal('modalCliente');
+  toast('Función en desarrollo', 'warn');
 }
-
 function editarCliente(id) {
-  const c = S.clientes.find(x => x.id === id);
-  if (!c) return;
-  S.clienteEditId = id;
-  document.getElementById('modalClienteTitle').textContent = 'Editar cliente';
-  document.getElementById('editClienteId').value = c.id;
-  document.getElementById('editClienteNombre').value = c.nombre;
-  document.getElementById('editClienteTel1').value = c.tel1 || '';
-  document.getElementById('editClienteTel2').value = c.tel2 || '';
-  document.getElementById('editClienteTipo').value = c.tipo || 'Particular';
-  document.getElementById('editClienteFuente').value = c.fuente || 'Sin datos';
-  document.getElementById('editClienteDir').value = c.dir || '';
-  openModal('modalCliente');
+  toast('Función en desarrollo', 'warn');
 }
 
 async function guardarCliente() {
@@ -614,7 +594,7 @@ function init() {
   const savedEmpresa = localStorage.getItem('pd_empresa');
   if (savedToken && savedUser) {
     try {
-      S.token = savedToken;
+      S.token = savedToken; 
       S.usuario = JSON.parse(savedUser);
       if (savedEmpresa) S.empresa = JSON.parse(savedEmpresa);
       afterLogin();

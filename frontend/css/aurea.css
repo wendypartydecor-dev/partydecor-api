@@ -69,8 +69,8 @@ input, select, textarea {
 }
 
 .login-logo img {
-  width: 64px;
-  height: 64px;
+  width: 80px;
+  height: 80px;
   object-fit: contain;
   filter: var(--logo-filter);
 }
@@ -457,8 +457,8 @@ input, select, textarea {
   text-decoration: none;
 }
 .topbar-logo img {
-  width: 28px;
-  height: 28px;
+  width: 36px;
+  height: 36px;
   object-fit: contain;
   filter: var(--logo-filter);
 }
@@ -1279,4 +1279,100 @@ input, select, textarea {
 .cliente-actions button {
   padding: 4px 8px;
   font-size: 11px;
+}
+
+/* ==========================================
+   MODAL MODERNO
+============================================= */
+.modal.modern {
+  background: var(--surface);
+  border-radius: 24px;
+  padding: 0;
+  max-width: 500px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  border: 0.5px solid var(--border2);
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px;
+  border-bottom: 0.5px solid var(--border);
+}
+.modal-header h2 {
+  font-family: var(--font-serif);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--text1);
+}
+.modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text2);
+  font-size: 20px;
+  cursor: pointer;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background 0.2s;
+}
+.modal-close:hover {
+  background: var(--surface2);
+}
+.modal-body {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.field-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text2);
+  letter-spacing: 0.3px;
+}
+.field-label .required {
+  color: var(--accent);
+  margin-left: 2px;
+}
+.field-input, .field-select {
+  background: var(--surface2);
+  border: 0.5px solid var(--border2);
+  border-radius: 14px;
+  padding: 12px 16px;
+  font-size: 15px;
+  color: var(--text1);
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.field-input:focus, .field-select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--chip-on-bg);
+}
+.field-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  padding-right: 40px;
+}
+.row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 16px 24px 24px;
+  border-top: 0.5px solid var(--border);
 }
