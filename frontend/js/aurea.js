@@ -613,6 +613,7 @@ function abrirNuevoEvento() {
   document.getElementById('evIsr').value = 'No aplica';
   document.getElementById('evAnticipo').value = '';
   openModal('modalEvento');
+  cerrarDd('evClienteDd');
 }
 
 async function abrirEditarEvento(id) {
@@ -638,6 +639,7 @@ async function abrirEditarEvento(id) {
   } catch (e) {
     toast('Error al cargar evento', 'error');
   }
+  cerrarDd('evClienteDd');
 }
 
 function buscarClienteParaEvento() {
@@ -693,7 +695,7 @@ async function guardarEvento() {
   const isr = document.getElementById('evIsr').value;
   const anticipo = parseFloat(document.getElementById('evAnticipo').value) || 0;
 
-  if (!clienteNombre && !clienteId) {
+  if (!clienteId && !clienteNombre) {
     toast('Debes seleccionar o crear un cliente', 'warn');
     return;
   }
@@ -714,12 +716,13 @@ async function guardarEvento() {
     anticipo
   };
 
-  // Si hay clienteId, usarlo; si no, crear cliente con los datos del nombre (y pedir teléfono)
   if (clienteId) {
+    // Cliente existente: solo enviar ID
     datos.id_cliente = clienteId;
   } else {
-    // Aquí deberíamos pedir teléfono, pero por ahora asumimos que el usuario usó el buscador
-    toast('Por favor, selecciona un cliente de la lista o créalo primero', 'warn');
+    // Nuevo cliente: necesitamos nombre y teléfono (por ahora solo nombre, pero debería pedir teléfono)
+    // Aquí podemos abrir el modal de cliente en su lugar, pero por ahora asumimos que el usuario usó el botón +Nuevo
+    toast('Para crear un nuevo cliente, usa el botón "+ Nuevo"', 'warn');
     return;
   }
 
@@ -728,7 +731,7 @@ async function guardarEvento() {
       await api('PATCH', '/eventos/' + id, datos);
       toast('Evento actualizado', 'ok');
     } else {
-      await api('POST', '/eventos', { ...datos, nombre: clienteNombre }); // el backend espera nombre
+      await api('POST', '/eventos', datos);
       toast('Evento creado', 'ok');
     }
     closeModal('modalEvento');
@@ -737,6 +740,40 @@ async function guardarEvento() {
     toast('Error: ' + e.message, 'error');
   }
 }
+
+// Variable para saber si estamos en modo "nuevo evento" esperando selección de cliente
+let _modoEventoEsperandoCliente = false;
+
+function abrirNuevoClienteDesdeEvento() {
+  _modoEventoEsperandoCliente = true;
+  cerrarDd('evClienteDd');
+  abrirNuevoCliente(); // del módulo clientes
+}
+
+// Modificar guardarCliente para que, si viene desde evento, actualice el campo
+// Esto requiere envolver la función original o crear una nueva.
+// Como no podemos modificar directamente guardarCliente (está en otra sección),
+// podemos hacer un override temporal o usar un evento.
+// Solución simple: después de guardar cliente, en el callback de éxito,
+// verificar si _modoEventoEsperandoCliente es true y entonces llamar a
+// una función que actualice el campo de búsqueda con el nuevo cliente.
+
+// En la función guardarCliente (de clientes), después de cargarClientes(),
+// añadiremos:
+/*
+if (_modoEventoEsperandoCliente) {
+  // Buscar el cliente recién creado por nombre/tel (asumimos que es el último)
+  const nuevoCliente = S.clientes[S.clientes.length - 1];
+  if (nuevoCliente) {
+    document.getElementById('evClienteId').value = nuevoCliente.id;
+    document.getElementById('evClienteSearch').value = nuevoCliente.nombre;
+    document.getElementById('evClienteInfo').textContent = 'Cliente seleccionado';
+    document.getElementById('evClienteInfo').style.display = 'block';
+  }
+  _modoEventoEsperandoCliente = false;
+}
+*/
+
 
 /* ==========================================
    UTILIDADES
@@ -765,6 +802,10 @@ function openModal(id) {
 }
 function closeModal(id) {
   document.getElementById(id)?.classList.remove('open');
+  if (id === 'modalEvento') {
+    cerrarDd('evClienteDd');
+    // Opcional: limpiar campos si es nuevo
+  }
 }
 
 /* ==========================================

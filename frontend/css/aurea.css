@@ -1614,3 +1614,65 @@ input, select, textarea, button {
     gap: 8px;
   }
 }
+/* ==========================================
+   MEJORAS EN MODAL DE EVENTOS
+============================================= */
+.modal.modern {
+  max-height: 90vh;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+.modal.modern::-webkit-scrollbar {
+  width: 4px;
+}
+.modal.modern::-webkit-scrollbar-thumb {
+  background: var(--border2);
+  border-radius: 4px;
+}
+
+/* Estilos para dropdown de búsqueda de clientes */
+.sdd {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: var(--r-sm);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  z-index: 1000;
+}
+.sdd .ddi {
+  padding: 10px 12px;
+  color: var(--text1);
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+}
+.sdd .ddi:hover {
+  background: var(--surface2);
+}
+.sdd .empty-dd {
+  padding: 12px;
+  color: var(--text3);
+  text-align: center;
+  font-size: 13px;
+}
+
+/* Mensaje vacío centrado */
+.empty-message {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 200px;
+  width: 100%;
+  color: var(--text3);
+  font-size: 14px;
+  text-align: center;
+}
+
+/* Ajuste para inputs de número (anticipo) */
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
