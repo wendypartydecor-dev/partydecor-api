@@ -34,7 +34,7 @@ router.post('/login', async (req, res) => {
     // Traer todos los usuarios activos (son pocos)
     const { data: usuarios, error } = await supabase
       .from('usuarios')
-      .select('id, nombre, pin_hash, es_admin, activo, metodo_login');
+      .select('id, nombre, pin_hash, es_admin, activo, metodo_login, rol');
 
     if (error) throw error;
 
