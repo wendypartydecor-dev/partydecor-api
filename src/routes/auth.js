@@ -78,7 +78,8 @@ router.post('/login', async (req, res) => {
       id:           usuarioValido.id,
       nombre:       usuarioValido.nombre,
       es_admin:     usuarioValido.es_admin,
-      metodo_login: usuarioValido.metodo_login
+      metodo_login: usuarioValido.metodo_login,
+      rol:          usuarioValido.rol || 'usuario'
     };
 
     // ── Caso A: una sola empresa → JWT definitivo directo ──
@@ -86,7 +87,7 @@ router.post('/login', async (req, res) => {
       const empresa = empresas?.[0] || null;
 
       const token = jwt.sign(
-        { ...usuarioPayload, empresa_id: empresa?.id_empresa || null, rol_empresa: empresa?.rol || null },
+        { ...usuarioPayload, rol: usuarioValido.rol || 'usuario', empresa_id: empresa?.id_empresa || null, rol_empresa: empresa?.rol || null },
         process.env.JWT_SECRET,
         { expiresIn: '12h' }
       );
@@ -169,6 +170,7 @@ router.post('/seleccionar', async (req, res) => {
         nombre:       payload.nombre,
         es_admin:     payload.es_admin,
         metodo_login: payload.metodo_login,
+        rol:          payload.rol || 'usuario',
         empresa_id,
         rol_empresa:  acceso.rol
       },
