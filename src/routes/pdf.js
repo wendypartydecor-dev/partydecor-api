@@ -60,7 +60,7 @@ table.prod tbody td.r{text-align:right;}
   <div class="hdr">
     <div class="hdr-logo">${d.logoHtml}</div>
     <div class="hdr-center">
-      <div class="hdr-title">Party Decor</div>
+      <div class="hdr-title">${esc(d.nombreEmpresa)}</div>
       <div class="hdr-main">Cotización</div>
       <div class="hdr-folio">${esc(d.folio)}</div>
       <div class="hdr-fecha">Fecha: ${esc(d.fechaCot)}</div>
@@ -90,8 +90,8 @@ table.prod tbody td.r{text-align:right;}
       <div class="nota"><b>Nota:</b> Esta cotización tiene una validez de <b>30 días</b>. Después de este tiempo deberá solicitar una nueva cotización y estará sujeta a variación de precios.</div>
       <div class="ftr">
         <div class="ftr-logo">${d.logoHtml}</div>
-        <div class="ftr-info"><b>Party Decor</b><br>Tel. 686 164 1579<br>${d.fechaEvLine}${d.tipoEvLine}</div>
-        <div class="ftr-brand">Party<br>Decor</div>
+        <div class="ftr-info"><b>${esc(d.nombreEmpresa)}</b><br>Tel. ${esc(d.telefonoEmpresa)}<br>${d.fechaEvLine}${d.tipoEvLine}</div>
+        <div class="ftr-brand">${esc(d.nombreEmpresa.split(' ')[0])}</div>
       </div>
     </div>
   </div>
@@ -121,17 +121,21 @@ router.post('/:idEvento', requireAuth, async (req, res) => {
     if (itErr) throw itErr;
     if (!items || items.length === 0) return res.status(400).json({ error: 'La cotización está vacía' });
 
-    // 3. Obtener logo de la empresa
+    // 3. Obtener logo y nombre de la empresa
     let logoHtml = '<span style="font-size:9px;color:#c8a0a0;">LOGO</span>';
+    let nombreEmpresa = 'Party Decor';
+    let telefonoEmpresa = '—';
     if (ev.id_empresa) {
       const { data: empresa } = await supabase
         .from('empresas')
-        .select('logo_pdf_url')
+        .select('logo_pdf_url, nombre, telefono')
         .eq('id', ev.id_empresa)
         .single();
       if (empresa?.logo_pdf_url) {
         logoHtml = `<img src="${empresa.logo_pdf_url}" alt="Logo" style="width:100%;height:100%;object-fit:contain;">`;
       }
+      if (empresa?.nombre) nombreEmpresa = empresa.nombre;
+      if (empresa?.telefono) telefonoEmpresa = empresa.telefono;
     }
 
     // 4. Calcular totales
@@ -183,6 +187,8 @@ router.post('/:idEvento', requireAuth, async (req, res) => {
     // 7. Generar PDF con Puppeteer
     const html = buildHtml({
       logoHtml,
+      nombreEmpresa,
+      telefonoEmpresa,
       folio:      idEvento,
       cliente:    ev.cli || '',
       telefono:   telefonos,

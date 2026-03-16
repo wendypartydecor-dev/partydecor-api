@@ -1,49 +1,22 @@
 const router   = require('express').Router();
 const supabase = require('../supabase');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { nextIdCliente, nextIdEvento, getEventoWithEmpresa } = require('../utils/db');
 
-// ─── Helpers ────────────────────────────────────────────────
-
-// Genera el siguiente ID de evento: E0001, E0002, ...
-async function nextIdEvento() {
-  const { data } = await supabase
-    .from('eventos')
-    .select('id')
-    .order('id', { ascending: false })
-    .limit(1);
-  if (!data || data.length === 0) return 'E0001';
-  const num = parseInt(data[0].id.replace(/\D/g, ''), 10);
-  return 'E' + String(num + 1).padStart(4, '0');
-}
-
-// Genera el siguiente ID de cliente: C001, C002, ...
-async function nextIdCliente() {
-  const { data } = await supabase
-    .from('clientes')
-    .select('id')
-    .order('id', { ascending: false })
-    .limit(1);
-  if (!data || data.length === 0) return 'C001';
-  const num = parseInt(data[0].id.replace(/\D/g, ''), 10);
-  return 'C' + String(num + 1).padStart(3, '0');
-}
-
-// Busca cliente por teléfono o crea uno nuevo — equivalente a _upsertCliente()
-async function upsertCliente({ nombre, tel1, tel2, tipo, fuente, dir, idExistente }) {
+async function upsertCliente({ nombre, tel1, tel2, tipo, fuente, dir, idExistente, idEmpresa }) {
   if (idExistente) return idExistente;
 
-  // Buscar por teléfono
   if (tel1) {
     const { data } = await supabase
       .from('clientes')
       .select('id')
       .eq('tel1', tel1)
+      .eq('id_empresa', idEmpresa)
       .limit(1);
     if (data && data.length > 0) return data[0].id;
   }
 
-  // Crear nuevo cliente
-  const id = await nextIdCliente();
+  const id = await nextIdCliente(idEmpresa);
   const { error } = await supabase.from('clientes').insert({
     id,
     nombre,
@@ -51,7 +24,9 @@ async function upsertCliente({ nombre, tel1, tel2, tipo, fuente, dir, idExistent
     tel2:   tel2   || '',
     tipo:   tipo   || 'Particular',
     fuente: fuente || 'Sin datos',
-    dir:    dir    || ''
+    dir:    dir    || '',
+    id_empresa: idEmpresa,
+    activo: true
   });
   if (error) throw error;
   return id;
@@ -62,12 +37,15 @@ async function upsertCliente({ nombre, tel1, tel2, tipo, fuente, dir, idExistent
 // GET /api/eventos
 router.get('/', requireAuth, async (req, res) => {
   try {
+    const { limit = 100, offset = 0 } = req.query;
     const { data, error } = await supabase
       .from('v_eventos_completo')
-      .select('*')
-      .order('f_ev', { ascending: false });
+      .select('*', { count: 'exact' })
+      .eq('id_empresa', req.user.empresa_id)
+      .order('f_ev', { ascending: false })
+      .range(Number(offset), Number(offset) + Number(limit) - 1);
     if (error) throw error;
-    res.json(data);
+    res.json({ data, limit: Number(limit), offset: Number(offset) });
   } catch (e) {
     console.error('GET eventos:', e.message);
     res.status(500).json({ error: e.message });
@@ -82,30 +60,33 @@ router.post('/', requireAuth, async (req, res) => {
     if (!d.tel1)    return res.status(400).json({ error: 'Teléfono principal requerido' });
     if (!d.fecha)   return res.status(400).json({ error: 'Fecha del evento requerida' });
 
+    const idEmpresa = req.user.empresa_id;
     const idCli = await upsertCliente({
       nombre: d.nombre, tel1: d.tel1, tel2: d.tel2,
       tipo: d.tipo_cli, fuente: d.fuente, dir: d.dir_cli,
-      idExistente: d.id_cliente || null
+      idExistente: d.id_cliente || null,
+      idEmpresa
     });
 
-    const id = await nextIdEvento();
+    const id = await nextIdEvento(idEmpresa);
 
     const { data, error } = await supabase
       .from('eventos')
       .insert({
         id,
-        f_ev:    d.fecha,
-        id_cli:  idCli,
-        cli:     d.nombre,
-        tipo:    d.tipo    || 'No especificado',
-        dir:     d.dir     || '',
-        estado:  'Borrador',
-        e_pago:  'Pendiente',
-        obs:     d.obs     || '',
-        iva:     d.iva     || 'No aplica',
-        isr:     d.isr     || 'No aplica',
-        anticipo: 0,
-        total:   0
+        f_ev:      d.fecha,
+        id_cli:    idCli,
+        id_empresa: idEmpresa,
+        cli:       d.nombre,
+        tipo:      d.tipo    || 'No especificado',
+        dir:       d.dir     || '',
+        estado:    'Borrador',
+        e_pago:    'Pendiente',
+        obs:       d.obs     || '',
+        iva:       d.iva     || 'No aplica',
+        isr:       d.isr     || 'No aplica',
+        anticipo:  0,
+        total:     0
       })
       .select()
       .single();
@@ -123,6 +104,10 @@ router.patch('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const d = req.body;
+    const idEmpresa = req.user.empresa_id;
+
+    const existing = await getEventoWithEmpresa(id, idEmpresa);
+    if (!existing) return res.status(404).json({ error: 'Evento no encontrado' });
 
     const updates = {};
     if (d.fecha   !== undefined) updates.f_ev    = d.fecha;
@@ -137,9 +122,7 @@ router.patch('/:id', requireAuth, async (req, res) => {
 
     if (d.nombre) {
       updates.cli = d.nombre;
-      // Actualizar datos del cliente
-      const { data: ev } = await supabase.from('eventos').select('id_cli').eq('id', id).single();
-      if (ev?.id_cli) {
+      if (existing.id_cli) {
         const clienteUpdates = {};
         if (d.nombre !== undefined) clienteUpdates.nombre = d.nombre;
         if (d.tel1   !== undefined) clienteUpdates.tel1   = d.tel1;
@@ -185,7 +168,11 @@ router.patch('/:id', requireAuth, async (req, res) => {
 router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   try {
     const { id } = req.params;
-    // El cascade en la FK borra también el detalle
+    const idEmpresa = req.user.empresa_id;
+
+    const existing = await getEventoWithEmpresa(id, idEmpresa);
+    if (!existing) return res.status(404).json({ error: 'Evento no encontrado' });
+
     const { error } = await supabase.from('eventos').delete().eq('id', id);
     if (error) throw error;
     res.json({ ok: true });
@@ -199,12 +186,7 @@ router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
 router.get('/:id', requireAuth, async (req, res) => {
   try {
     const { id } = req.params;
-    const { data, error } = await supabase
-      .from('v_eventos_completo')
-      .select('*')
-      .eq('id', id)
-      .single();
-    if (error) throw error;
+    const data = await getEventoWithEmpresa(id, req.user.empresa_id);
     if (!data) return res.status(404).json({ error: 'Evento no encontrado' });
     res.json(data);
   } catch (e) {

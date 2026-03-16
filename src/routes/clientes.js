@@ -1,30 +1,21 @@
 const router = require('express').Router();
 const supabase = require('../supabase');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
-
-// Genera el siguiente ID de cliente: C001, C002, ...
-async function nextIdCliente() {
-  const { data } = await supabase
-    .from('clientes')
-    .select('id')
-    .order('id', { ascending: false })
-    .limit(1);
-  if (!data || data.length === 0) return 'C001';
-  const num = parseInt(data[0].id.replace(/\D/g, ''), 10);
-  return 'C' + String(num + 1).padStart(3, '0');
-}
+const { nextIdCliente } = require('../utils/db');
 
 // GET /api/clientes
 router.get('/', requireAuth, async (req, res) => {
   try {
+    const { limit = 100, offset = 0 } = req.query;
     const { data, error } = await supabase
       .from('clientes')
-      .select('*')
+      .select('*', { count: 'exact' })
       .eq('activo', true)
-      .eq('id_empresa', req.user.empresa_id)  // ← filtrar por empresa
-      .order('nombre');
+      .eq('id_empresa', req.user.empresa_id)
+      .order('nombre')
+      .range(Number(offset), Number(offset) + Number(limit) - 1);
     if (error) throw error;
-    res.json(data);
+    res.json({ data, limit: Number(limit), offset: Number(offset) });
   } catch (e) {
     console.error('GET clientes:', e.message);
     res.status(500).json({ error: e.message });
@@ -58,7 +49,7 @@ router.post('/', requireAuth, async (req, res) => {
     if (!nombre) return res.status(400).json({ error: 'Nombre requerido' });
     if (!tel1) return res.status(400).json({ error: 'Teléfono principal requerido' });
 
-    const id = await nextIdCliente();
+    const id = await nextIdCliente(req.user.empresa_id);
     const { data, error } = await supabase
       .from('clientes')
       .insert({

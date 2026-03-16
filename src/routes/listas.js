@@ -37,20 +37,22 @@ router.get('/clientes', requireAuth, async (req, res) => {
 // GET /api/listas/catalogo
 router.get('/catalogo', requireAuth, async (req, res) => {
   try {
+    const { limit = 500, offset = 0 } = req.query;
     const { data, error } = await supabase
       .from('catalogo_precios')
-      .select('id, categoria, nombre, tipo_precio, precio, unidad, permite_cambio, notas')
+      .select('id, categoria, nombre, tipo_precio, precio, unidad, permite_cambio, notas', { count: 'exact' })
       .eq('activo', true)
       .order('categoria')
-      .order('nombre');
+      .order('nombre')
+      .range(Number(offset), Number(offset) + Number(limit) - 1);
     if (error) throw error;
 
-    const items = data.map(i => ({
+    const items = (data || []).map(i => ({
       ...i,
       es_variable: i.precio === 0 || i.tipo_precio === 'variable'
     }));
 
-    res.json(items);
+    res.json({ data: items, limit: Number(limit), offset: Number(offset) });
   } catch (e) {
     console.error('catalogo:', e.message);
     res.status(500).json({ error: e.message });

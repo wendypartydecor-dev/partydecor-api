@@ -1,5 +1,11 @@
 // src/index.js — versión Aurea
 require('dotenv').config();
+
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET no definido en .env');
+  process.exit(1);
+}
+
 const express = require('express');
 const cors    = require('cors');
 

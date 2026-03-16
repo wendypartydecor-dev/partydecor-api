@@ -1,6 +1,12 @@
 const router   = require('express').Router();
 const supabase = require('../supabase');
 const { requireAuth, requireAdmin } = require('../middleware/auth');
+const { getEventoWithEmpresa } = require('../utils/db');
+
+async function verificarEventoPerteneceAEmpresa(idEvento, empresaId) {
+  const evento = await getEventoWithEmpresa(idEvento, empresaId);
+  return evento !== null;
+}
 
 // ─── Helper: obtener items de un evento ─────────────────────
 async function getItems(idEvento) {
@@ -35,7 +41,10 @@ async function getItems(idEvento) {
 // GET /api/items/:idEvento
 router.get('/:idEvento', requireAuth, async (req, res) => {
   try {
-    res.json(await getItems(req.params.idEvento));
+    const { idEvento } = req.params;
+    const valido = await verificarEventoPerteneceAEmpresa(idEvento, req.user.empresa_id);
+    if (!valido) return res.status(404).json({ error: 'Evento no encontrado' });
+    res.json(await getItems(idEvento));
   } catch (e) {
     console.error('GET items:', e.message);
     res.status(500).json({ error: e.message });
@@ -47,6 +56,8 @@ router.get('/:idEvento', requireAuth, async (req, res) => {
 router.post('/:idEvento', requireAuth, async (req, res) => {
   try {
     const idEvento  = req.params.idEvento;
+    const valido = await verificarEventoPerteneceAEmpresa(idEvento, req.user.empresa_id);
+    if (!valido) return res.status(404).json({ error: 'Evento no encontrado' });
     const { nombre, cantidad: cantRaw, precio: precioRaw, desc, proveedor, costo: costoRaw } = req.body;
 
     if (!nombre)                              return res.status(400).json({ error: 'Nombre requerido' });
@@ -109,6 +120,9 @@ router.post('/:idEvento', requireAuth, async (req, res) => {
 router.post('/:idEvento/externo', requireAuth, async (req, res) => {
   try {
     const idEvento = req.params.idEvento;
+    const valido = await verificarEventoPerteneceAEmpresa(idEvento, req.user.empresa_id);
+    if (!valido) return res.status(404).json({ error: 'Evento no encontrado' });
+
     const { nombre, cantidad: cantRaw, precio: precioRaw, desc, costo: costoRaw } = req.body;
 
     if (!nombre)                            return res.status(400).json({ error: 'Nombre requerido' });
@@ -157,6 +171,9 @@ router.post('/:idEvento/externo', requireAuth, async (req, res) => {
 router.patch('/:idEvento/cantidad', requireAuth, async (req, res) => {
   try {
     const idEvento = req.params.idEvento;
+    const valido = await verificarEventoPerteneceAEmpresa(idEvento, req.user.empresa_id);
+    if (!valido) return res.status(404).json({ error: 'Evento no encontrado' });
+
     const { nombre, cantidad: cantRaw } = req.body;
     const cantidad = parseInt(cantRaw, 10);
 
@@ -198,6 +215,9 @@ router.patch('/:idEvento/cantidad', requireAuth, async (req, res) => {
 router.patch('/:idEvento/precio', requireAuth, async (req, res) => {
   try {
     const idEvento = req.params.idEvento;
+    const valido = await verificarEventoPerteneceAEmpresa(idEvento, req.user.empresa_id);
+    if (!valido) return res.status(404).json({ error: 'Evento no encontrado' });
+
     const { nombre, precio: precioRaw } = req.body;
     const precio = parseFloat(precioRaw);
 
@@ -229,6 +249,8 @@ router.patch('/:idEvento/precio', requireAuth, async (req, res) => {
 router.delete('/:idEvento/:nombre', requireAuth, async (req, res) => {
   try {
     const { idEvento, nombre } = req.params;
+    const valido = await verificarEventoPerteneceAEmpresa(idEvento, req.user.empresa_id);
+    if (!valido) return res.status(404).json({ error: 'Evento no encontrado' });
     await supabase
       .from('detalle_cotizacion')
       .delete()
@@ -244,6 +266,10 @@ router.delete('/:idEvento/:nombre', requireAuth, async (req, res) => {
 // DELETE /api/items/:idEvento — limpiar toda la cotización (solo admin)
 router.delete('/:idEvento', requireAuth, requireAdmin, async (req, res) => {
   try {
+    const { idEvento } = req.params;
+    const valido = await verificarEventoPerteneceAEmpresa(idEvento, req.user.empresa_id);
+    if (!valido) return res.status(404).json({ error: 'Evento no encontrado' });
+
     await supabase
       .from('detalle_cotizacion')
       .delete()
