@@ -227,7 +227,7 @@ function ddClear(id) {
    CLIENTES
 ============================================= */
 async function cargarClientes() {
-  try { S.clientes = await api('GET','/clientes')||[]; renderClientes(); }
+  try { const res = await api('GET','/clientes'); S.clientes = (res?.data)||[]; renderClientes(); }
   catch(e) { toast('Error al cargar clientes: '+e.message,'error'); }
 }
 function renderClientes() {
@@ -328,8 +328,9 @@ function abrirNuevoClienteDesdeEvento() {
 ============================================= */
 async function cargarEventos() {
   try {
-    const data = await api('GET','/eventos');
-    S.eventos = (data||[]).map(e => ({
+    const res = await api('GET','/eventos');
+    const data = (res?.data)||[];
+    S.eventos = data.map(e => ({
       ...e,
       cliente:   e.cliente||e.cli||'—',
       fecha:     e.f_ev ? new Date(e.f_ev+'T12:00:00').toLocaleDateString('es-MX',{day:'numeric',month:'short',year:'numeric'}) : '—',
