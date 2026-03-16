@@ -170,9 +170,14 @@ async function seleccionarEmpresa(idx) {
 }
 function afterLogin() {
   const u = S.usuario||{}, emp = S.empresa||{};
-  if (emp.tema_default) setTheme(emp.tema_default);
-  document.getElementById('appEmpresaNombre').textContent   = emp.nombre||'Party Decor';
-  document.getElementById('loginEmpresaNombre').textContent = emp.nombre||'Party Decor';
+  const temaUsuario = localStorage.getItem('pd_theme');
+  if (temaUsuario) {
+    setTheme(temaUsuario);
+  } else if (emp.tema_default) {
+    setTheme(emp.tema_default);
+  }
+  document.getElementById('appEmpresaNombre').textContent   = emp.empresa||emp.nombre||'Party Decor';
+  document.getElementById('loginEmpresaNombre').textContent = emp.empresa||emp.nombre||'Party Decor';
   actualizarLogos();
   const ini = (u.nombre||'U').split(' ').map(p=>p[0]).join('').substring(0,2).toUpperCase();
   document.getElementById('appAvatar').textContent     = ini;
@@ -444,7 +449,7 @@ async function generarPDF(id) {
 
 /* ── Modal evento ───────────────────────────────────────────── */
 function resetModalEvento() {
-  ['editEventoId','evClienteId','evClienteSearch','evFecha','evDir','evObs','evAnticipo']
+  ['editEventoId','evClienteId','evClienteSearch','evClienteTel1','evFecha','evDir','evObs','evAnticipo']
     .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   const inf = document.getElementById('evClienteInfo');
   if (inf) { inf.textContent=''; inf.style.display='none'; }
@@ -507,15 +512,16 @@ function buscarClienteParaEvento() {
     dd.classList.add('open'); return;
   }
   dd.innerHTML = res.map(c => `
-    <div class="ddi" onmousedown="seleccionarClienteParaEvento('${c.id}','${esc(c.nombre)}')">
+    <div class="ddi" onmousedown="seleccionarClienteParaEvento('${c.id}','${esc(c.nombre)}','${esc(c.tel1||'')}')">
       <div class="ddi-name">${esc(c.nombre)}</div>
       <div class="ddi-meta">${esc(c.tel1)}</div>
     </div>`).join('');
   dd.classList.add('open');
 }
-function seleccionarClienteParaEvento(id, nombre) {
+function seleccionarClienteParaEvento(id, nombre, tel1) {
   document.getElementById('evClienteId').value     = id;
   document.getElementById('evClienteSearch').value = nombre;
+  document.getElementById('evClienteTel1').value = tel1 || '';
   const inf = document.getElementById('evClienteInfo');
   if (inf) { inf.textContent='✓ '+nombre; inf.style.display='block'; }
   ddClear('evClienteDd');
@@ -525,6 +531,8 @@ function seleccionarClienteParaEvento(id, nombre) {
 async function guardarEvento() {
   const id        = document.getElementById('editEventoId').value;
   const clienteId = document.getElementById('evClienteId').value.trim();
+  const clienteTel1 = document.getElementById('evClienteTel1').value.trim();
+  const clienteNombre = document.getElementById('evClienteSearch').value.trim();
   const fecha     = document.getElementById('evFecha').value;
 
   if (!clienteId) {
@@ -534,6 +542,8 @@ async function guardarEvento() {
 
   const datos = {
     id_cliente: clienteId,
+    nombre: clienteNombre,
+    tel1: clienteTel1,
     fecha,
     tipo:     document.getElementById('evTipo').value,
     dir:      document.getElementById('evDir').value.trim(),

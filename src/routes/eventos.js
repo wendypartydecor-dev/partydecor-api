@@ -56,9 +56,11 @@ router.get('/', requireAuth, async (req, res) => {
 router.post('/', requireAuth, async (req, res) => {
   try {
     const d = req.body;
-    if (!d.nombre)  return res.status(400).json({ error: 'Nombre del cliente requerido' });
-    if (!d.tel1)    return res.status(400).json({ error: 'Teléfono principal requerido' });
-    if (!d.fecha)   return res.status(400).json({ error: 'Fecha del evento requerida' });
+    if (!d.fecha) return res.status(400).json({ error: 'Fecha del evento requerida' });
+    
+    if (!d.id_cliente && (!d.nombre || !d.tel1)) {
+      return res.status(400).json({ error: 'Selecciona un cliente o crea uno nuevo' });
+    }
 
     const idEmpresa = req.user.empresa_id;
     const idCli = await upsertCliente({
