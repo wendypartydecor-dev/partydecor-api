@@ -109,6 +109,8 @@ function afterLogin() {
   document.getElementById('profileRol').textContent    = getRolDisplay(u);
   
   const mostrarAdmin = S.rol === 'super_admin' || S.rol === 'admin' || S.rol_empresa === 'admin';
+  console.log('Rol detectado:', S.rol, 'esAdmin:', S.esAdmin, 'mostrarAdmin:', mostrarAdmin);
+  if (mostrarAdmin) toast('Admin habilitado', 'ok');
   document.querySelectorAll('.nav-item.admin-only').forEach(el => {
     el.classList.toggle('visible', mostrarAdmin);
   });
