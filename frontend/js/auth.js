@@ -108,7 +108,10 @@ function afterLogin() {
   document.getElementById('profileName').textContent   = u.nombre||'';
   document.getElementById('profileRol').textContent    = getRolDisplay(u);
   
-  document.getElementById('navAdmin')?.classList.toggle('visible', S.rol === 'super_admin' || S.rol === 'admin' || S.rol_empresa === 'admin');
+  const mostrarAdmin = S.rol === 'super_admin' || S.rol === 'admin' || S.rol_empresa === 'admin';
+  document.querySelectorAll('.nav-item.admin-only').forEach(el => {
+    el.classList.toggle('visible', mostrarAdmin);
+  });
   
   showScreen('screenApp'); navTo('eventos');
   cargarEventos(); cargarClientes();
