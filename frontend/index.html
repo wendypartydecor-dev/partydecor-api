@@ -154,6 +154,10 @@
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
       Gastos
     </button>
+    <button class="nav-item admin-only" id="navAdmin" onclick="openAdminPanel()" style="display:none">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
+      Admin Panel
+    </button>
     <div class="nav-divider"></div>
     <button class="nav-item" id="nav-ajustes" onclick="navTo('ajustes')">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -563,6 +567,113 @@
 
 </div><!-- /screenApp -->
 
-<script src="/js/aurea.js"></script>
+  <!-- Screen: Admin -->
+  <div id="screenAdmin" class="screen">
+    <div class="topbar">
+      <button class="topbar-btn" onclick="showScreen('screenApp'); navTo('eventos');">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <span class="topbar-name">Administración</span>
+    </div>
+    <div class="admin-tabs" id="adminTabs">
+      <button class="tab-btn active" data-tab="usuarios" onclick="renderAdminUsuarios()">Usuarios</button>
+      <button class="tab-btn" data-tab="empresas" onclick="renderAdminEmpresas()">Empresas</button>
+    </div>
+    <div class="admin-content" id="adminContent"></div>
+  </div>
+
+  <!-- Modales de Admin -->
+  <div class="modal-backdrop" id="modalAdminUsuario">
+    <div class="modal modern">
+      <div class="modal-title" id="modalAdminUsuarioTitle">Nuevo Usuario</div>
+      <form id="adminUsuarioForm">
+        <input type="hidden" id="editUsuarioId">
+        <div class="fg">
+          <label class="fl">Nombre *</label>
+          <input class="fi" type="text" id="adminUsuarioNombre" required>
+        </div>
+        <div class="fg">
+          <label class="fl">Email</label>
+          <input class="fi" type="email" id="adminUsuarioEmail">
+        </div>
+        <div class="fg">
+          <label class="fl">Teléfono</label>
+          <input class="fi" type="tel" id="adminUsuarioTel">
+        </div>
+        <div class="fg">
+          <label class="fl">Rol</label>
+          <select class="fs" id="adminUsuarioRol">
+            <option value="super_admin">Super Admin</option>
+            <option value="admin">Admin</option>
+            <option value="usuario" selected>Usuario</option>
+            <option value="solo_lectura">Solo Lectura</option>
+          </select>
+        </div>
+        <div class="fg">
+          <label class="fl">PIN (4-8 dígitos)</label>
+          <input class="fi" type="password" id="adminUsuarioPin" minlength="4" maxlength="8">
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn" onclick="closeModal('modalAdminUsuario')">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="guardarAdminUsuario()">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal-backdrop" id="modalAdminEmpresa">
+    <div class="modal modern">
+      <div class="modal-title" id="modalAdminEmpresaTitle">Nueva Empresa</div>
+      <form id="adminEmpresaForm">
+        <input type="hidden" id="editEmpresaId">
+        <div class="r2">
+          <div class="fg">
+            <label class="fl">ID *</label>
+            <input class="fi" type="text" id="adminEmpresaId" required placeholder="PD001">
+          </div>
+          <div class="fg">
+            <label class="fl">Nombre Corto</label>
+            <input class="fi" type="text" id="adminEmpresaCorto">
+          </div>
+        </div>
+        <div class="fg">
+          <label class="fl">Nombre *</label>
+          <input class="fi" type="text" id="adminEmpresaNombre" required>
+        </div>
+        <div class="r2">
+          <div class="fg">
+            <label class="fl">Color</label>
+            <input class="fi" type="color" id="adminEmpresaColor" value="#a0a0a0">
+          </div>
+          <div class="fg">
+            <label class="fl">Tema</label>
+            <select class="fs" id="adminEmpresaTema">
+              <option value="neutro">Neutro</option>
+              <option value="rosa">Rosa</option>
+              <option value="gold">Gold</option>
+              <option value="sage">Sage</option>
+              <option value="lavender">Lavender</option>
+              <option value="ocean">Ocean</option>
+            </select>
+          </div>
+        </div>
+        <div class="modal-actions">
+          <button type="button" class="btn" onclick="closeModal('modalAdminEmpresa')">Cancelar</button>
+          <button type="button" class="btn btn-primary" onclick="guardarAdminEmpresa()">Guardar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="/js/config.js"></script>
+  <script src="/js/state.js"></script>
+  <script src="/js/utils.js"></script>
+  <script src="/js/api.js"></script>
+  <script src="/js/ui.js"></script>
+  <script src="/js/auth.js"></script>
+  <script src="/js/clientes.js"></script>
+  <script src="/js/eventos.js"></script>
+  <script src="/js/admin.js"></script>
+  <script src="/js/init.js"></script>
 </body>
 </html>

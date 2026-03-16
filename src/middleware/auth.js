@@ -1,6 +1,5 @@
 const jwt = require('jsonwebtoken');
 
-// Verifica que el request tenga un JWT válido
 function requireAuth(req, res, next) {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
@@ -15,7 +14,6 @@ function requireAuth(req, res, next) {
   }
 }
 
-// Verifica que el usuario sea admin (para operaciones destructivas)
 function requireAdmin(req, res, next) {
   if (!req.user?.es_admin) {
     return res.status(403).json({ error: 'Se requiere acceso de administrador' });
@@ -23,4 +21,19 @@ function requireAdmin(req, res, next) {
   next();
 }
 
-module.exports = { requireAuth, requireAdmin };
+function requireSuperAdmin(req, res, next) {
+  if (req.user?.rol !== 'super_admin') {
+    return res.status(403).json({ error: 'Se requiere acceso de Super Admin' });
+  }
+  next();
+}
+
+function requireAdminEmpresa(req, res, next) {
+  const rol = req.user?.rol_empresa;
+  if (rol !== 'admin') {
+    return res.status(403).json({ error: 'Se requiere rol de Admin en esta empresa' });
+  }
+  next();
+}
+
+module.exports = { requireAuth, requireAdmin, requireSuperAdmin, requireAdminEmpresa };
