@@ -567,10 +567,12 @@ input, select, textarea {
   color: var(--accent);
 }
 .nav-item.admin-only {
-  opacity: 0.5;
+  opacity: 0;
+  pointer-events: none;
 }
 .nav-item.admin-only.visible {
   opacity: 1;
+  pointer-events: auto;
 }
 .nav-divider {
   height: 0.5px;
