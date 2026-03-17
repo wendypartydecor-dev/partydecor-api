@@ -8,6 +8,7 @@ if (!process.env.JWT_SECRET) {
 
 const express = require('express');
 const cors    = require('cors');
+const path     = require('path');
 
 const authRoutes     = require('./routes/auth');
 const listasRoutes   = require('./routes/listas');
@@ -26,10 +27,13 @@ const PORT = process.env.PORT || 3000;
 app.use(cors({ origin: process.env.ALLOWED_ORIGIN || '*' }));
 app.use(express.json());
 
+// ─── Archivos estáticos (Frontend) ───────────────────────────
+app.use(express.static(path.join(__dirname, '../frontend')));
+
 // ─── Health check ────────────────────────────────────────────
 app.get('/health', (req, res) => res.json({ ok: true, service: 'aurea-api' }));
 
-// ─── Rutas ───────────────────────────────────────────────────
+// ─── Rutas API ───────────────────────────────────────────────
 app.use('/api/auth',     authRoutes);
 app.use('/api/listas',   listasRoutes);
 app.use('/api/eventos',  eventosRoutes);
@@ -40,8 +44,10 @@ app.use('/api/clientes', clientesRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/empresa', empresaConfigRoutes); 
 
-// ─── 404 ─────────────────────────────────────────────────────
-app.use((req, res) => res.status(404).json({ error: 'Ruta no encontrada' }));
+// ─── SPA: rutas directas devuelven index.html ───────────────
+app.get('*', (req, res) => {
+  res.sendFile(path.join(__dirname, '../frontend/index.html'));
+});
 
 // ─── Error global ────────────────────────────────────────────
 app.use((err, req, res, next) => {

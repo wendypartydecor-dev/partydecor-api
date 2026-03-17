@@ -25,6 +25,28 @@ document.addEventListener('touchmove', e => {
 
 function init() {
   loadTheme();
+  
+  // Cargar empresa guardada en login si existe
+  const savedEmpresa = localStorage.getItem('pd_empresa');
+  if (savedEmpresa) {
+    try {
+      const emp = JSON.parse(savedEmpresa);
+      const logoArea = document.getElementById('logoAurea');
+      const logoEmp = document.getElementById('logoEmpresa');
+      const logoImg = document.getElementById('loginLogoImg');
+      const logoNom = document.getElementById('loginEmpresaNombre');
+      
+      if (emp && (emp.logo_login_url || emp.nombre || emp.empresa)) {
+        if (logoArea) logoArea.style.display = 'none';
+        if (logoEmp) {
+          logoEmp.style.display = 'flex';
+          if (logoImg && emp.logo_login_url) logoImg.src = emp.logo_login_url;
+          if (logoNom) logoNom.textContent = emp.nombre || emp.empresa || '';
+        }
+      }
+    } catch(e) {}
+  }
+  
   if (S.token && S.usuario) {
     afterLogin();
   }

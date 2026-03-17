@@ -124,3 +124,30 @@ function cerrarSesion() {
   ['pd_token','pd_user','pd_empresa','pd_token_temp'].forEach(k => localStorage.removeItem(k));
   showScreen('screenLogin'); switchLoginTab('pass');
 }
+
+async function guardarPin() {
+  const pin = document.getElementById('nuevoPin').value;
+  if (!pin || pin.length < 4 || pin.length > 8) {
+    toast('El PIN debe tener entre 4 y 8 dígitos', 'warn');
+    return;
+  }
+  try {
+    await api('PATCH', '/auth/metodo-login', { metodo: 'pin', nuevo_pin: pin });
+    toast('PIN actualizado', 'ok');
+    closeModal('modalCambiarPin');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function guardarMetodoLogin() {
+  const metodo = document.getElementById('metodoLoginSelect').value;
+  try {
+    await api('PATCH', '/auth/metodo-login', { metodo });
+    toast('Método actualizado', 'ok');
+    closeModal('modalMetodoLogin');
+    if (metodo === 'pin') {
+      switchLoginTab('pin');
+    } else {
+      switchLoginTab('pass');
+    }
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}

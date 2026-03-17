@@ -443,7 +443,8 @@
             <div style="font-size:12px;color:var(--text3)" id="profileRol">Admin</div>
           </div>
         </div>
-        <button class="btn btn-ghost btn-full" style="font-size:13px">Cambiar contraseña</button>
+        <button class="btn btn-ghost btn-full" style="font-size:13px" onclick="openModal('modalCambiarPin')">Cambiar PIN</button>
+        <button class="btn btn-ghost btn-full" style="font-size:13px" onclick="openModal('modalMetodoLogin')">Método de inicio</button>
       </div>
 
       <!-- Apariencia -->
@@ -569,7 +570,8 @@
 
   <!-- Screen: Admin -->
   <div id="screenAdmin" class="screen">
-    <div class="topbar">
+    <div class="main-content" style="margin-left:0;padding:16px;">
+    <div class="topbar" style="position:sticky;top:0;z-index:10;">
       <button class="topbar-btn" onclick="showScreen('screenApp'); navTo('eventos');">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>
       </button>
@@ -580,6 +582,7 @@
       <button class="tab-btn" data-tab="empresas" onclick="renderAdminEmpresas()">Empresas</button>
     </div>
     <div class="admin-content" id="adminContent"></div>
+    </div>
   </div>
 
   <!-- Modales de Admin -->
@@ -662,6 +665,39 @@
           <button type="button" class="btn btn-primary" onclick="guardarAdminEmpresa()">Guardar</button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- Modal: Cambiar PIN -->
+  <div class="modal-backdrop" id="modalCambiarPin">
+    <div class="modal modern">
+      <div class="modal-title">Cambiar PIN</div>
+      <div class="fg">
+        <label class="fl">Nuevo PIN (4-8 dígitos)</label>
+        <input class="fi" type="password" id="nuevoPin" maxlength="8" minlength="4" placeholder="••••">
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal('modalCambiarPin')">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarPin()">Guardar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal: Método de Login -->
+  <div class="modal-backdrop" id="modalMetodoLogin">
+    <div class="modal modern">
+      <div class="modal-title">Método de inicio</div>
+      <div class="fg">
+        <label class="fl">Selecciona cómo quieres iniciar sesión</label>
+        <select class="fs" id="metodoLoginSelect">
+          <option value="password">Usuario y contraseña</option>
+          <option value="pin">PIN numérico</option>
+        </select>
+      </div>
+      <div class="modal-actions">
+        <button class="btn" onclick="closeModal('modalMetodoLogin')">Cancelar</button>
+        <button class="btn btn-primary" onclick="guardarMetodoLogin()">Guardar</button>
+      </div>
     </div>
   </div>
 

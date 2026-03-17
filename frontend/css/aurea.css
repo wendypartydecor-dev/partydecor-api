@@ -88,10 +88,10 @@ input, select, textarea {
 
 .login-card {
   background: var(--surface);
-  border: 0.5px solid var(--border);
-  border-radius: var(--r-lg);
-  padding: 28px 24px;
-  box-shadow: var(--shadow);
+  border: 1px solid var(--border);
+  border-radius: 24px;
+  padding: 32px 28px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
   display: flex;
   flex-direction: column;
   gap: 16px;
@@ -160,13 +160,18 @@ input, select, textarea {
 .btn-accent {
   background: var(--accent);
   color: #fff;
+  border-radius: 12px;
+  font-weight: 600;
 }
 .btn-accent:hover {
-  opacity: 0.88;
+  opacity: 0.9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
 }
 .btn-accent:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transform: none;
 }
 .btn-ghost {
   background: transparent;
@@ -765,22 +770,25 @@ input, select, textarea {
 }
 .ev-card {
   background: var(--surface);
-  border: 0.5px solid var(--border);
-  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
   padding: 16px;
   cursor: pointer;
-  transition: all var(--trans);
+  transition: all 0.2s ease;
   animation: fadeUp 0.2s ease both;
+  margin-bottom: 12px;
 }
 .ev-card:hover {
-  border-color: var(--border2);
-  box-shadow: var(--shadow);
+  border-color: var(--accent);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
 }
 .ev-card.expanded {
   border-color: var(--accent);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
 }
 .ev-card.past {
-  opacity: 0.75;
+  opacity: 0.7;
 }
 .ev-card-top {
   display: flex;
@@ -1111,6 +1119,14 @@ input, select, textarea {
   max-height: 85vh;
   overflow-y: auto;
 }
+@media (max-width: 480px) {
+  .modal.modern {
+    max-width: 95%;
+    padding: 16px;
+    border-radius: 16px;
+    margin: 10px auto;
+  }
+}
 .modal.modern .modal-title {
   font-size: 20px;
   font-weight: 600;
@@ -1152,6 +1168,10 @@ input, select, textarea {
 }
 .modal.modern input[type="date"] {
   color-scheme: dark;
+}
+.modal.modern select {
+  color: var(--text1);
+  background-color: var(--bg2);
 }
 .modal.modern .btn {
   border-radius: 30px;
@@ -1401,15 +1421,17 @@ input, select, textarea {
 }
 .cliente-card {
   background: var(--surface);
-  border: 0.5px solid var(--border);
-  border-radius: var(--r-lg);
+  border: 1px solid var(--border);
+  border-radius: 16px;
   padding: 16px;
-  transition: all var(--trans);
+  transition: all 0.2s ease;
   animation: fadeUp 0.2s ease both;
+  margin-bottom: 12px;
 }
 .cliente-card:hover {
-  border-color: var(--border2);
-  box-shadow: var(--shadow);
+  border-color: var(--accent);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
 }
 .cliente-nombre {
   font-size: 14px;
@@ -1638,7 +1660,7 @@ input, select, textarea {
 /* Inputs con border-bottom (modal moderno) */
 .modal.modern input, .modal.modern select {
   color: var(--text1);
-  background: transparent;
+  background: var(--bg2);
 }
 
 /* ==========================================
