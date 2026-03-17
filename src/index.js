@@ -44,7 +44,8 @@ app.use('/api/clientes', clientesRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/empresa', empresaConfigRoutes); 
 
-// ─── SPA: rutas directas devuelven index.html ───────────────
+// ─── Catch-all para SPA (solo GET que no coincidan con API) ────
+app.get('/api/*', (req, res) => res.status(404).json({ error: 'Ruta API no encontrada' }));
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, '../frontend/index.html'));
 });
