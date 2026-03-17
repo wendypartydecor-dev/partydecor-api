@@ -1,6 +1,6 @@
 /* ==========================================
-   BASE
-============================================= */
+   BASE - Diseño Profesional
+   ============================================= */
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
@@ -9,13 +9,14 @@
 
 html, body {
   height: 100%;
-  font-family: var(--font);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
   background: var(--bg);
   color: var(--text1);
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  transition: background var(--trans), color var(--trans);
+  -moz-osx-font-smoothing: grayscale;
+  transition: background 0.3s ease, color 0.3s ease;
   overflow-x: hidden;
 }
 body.modal-open {
@@ -23,14 +24,37 @@ body.modal-open {
 }
 
 button {
-  font-family: var(--font);
+  font-family: inherit;
   cursor: pointer;
   border: none;
   background: none;
+  font-size: inherit;
 }
 
 input, select, textarea {
-  font-family: var(--font);
+  font-family: inherit;
+  font-size: inherit;
+}
+
+/* Transiciones suaves */
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+}
+
+/* Scrollbar profesional */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text3);
 }
 
 /* ==========================================
@@ -58,11 +82,19 @@ input, select, textarea {
 
 .login-wrap {
   width: 100%;
-  max-width: 380px;
+  max-width: 400px;
   display: flex;
   flex-direction: column;
-  gap: 24px;
-  animation: fadeUp 0.4s ease both;
+  gap: 32px;
+  padding: 40px 20px;
+  animation: fadeUp 0.5s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@media (max-width: 480px) {
+  .login-wrap {
+    padding: 24px 16px;
+    gap: 24px;
+  }
 }
 
 .login-logo {
@@ -89,12 +121,19 @@ input, select, textarea {
 .login-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 24px;
-  padding: 32px 28px;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+  border-radius: 28px;
+  padding: 40px 36px;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.15);
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 20px;
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 28px 24px;
+    border-radius: 24px;
+  }
 }
 
 .login-tab-row {
@@ -150,23 +189,27 @@ input, select, textarea {
 }
 
 .btn {
-  padding: 12px 20px;
-  border-radius: var(--r);
+  padding: 14px 24px;
+  border-radius: 14px;
   font-size: 14px;
-  font-weight: 500;
-  transition: all var(--trans);
+  font-weight: 600;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   text-align: center;
+  letter-spacing: -0.2px;
 }
 .btn-accent {
   background: var(--accent);
   color: #fff;
-  border-radius: 12px;
+  border-radius: 14px;
   font-weight: 600;
 }
 .btn-accent:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  opacity: 0.92;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+}
+.btn-accent:active {
+  transform: translateY(0);
 }
 .btn-accent:disabled {
   opacity: 0.5;
@@ -771,24 +814,24 @@ input, select, textarea {
 .ev-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 16px;
+  border-radius: 20px;
+  padding: 20px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  animation: fadeUp 0.2s ease both;
-  margin-bottom: 12px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fadeUp 0.3s ease both;
+  margin-bottom: 16px;
 }
 .ev-card:hover {
   border-color: var(--accent);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
-  transform: translateY(-2px);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  transform: translateY(-3px);
 }
 .ev-card.expanded {
   border-color: var(--accent);
-  box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15);
 }
 .ev-card.past {
-  opacity: 0.7;
+  opacity: 0.65;
 }
 .ev-card-top {
   display: flex;
@@ -1422,15 +1465,17 @@ input, select, textarea {
 .cliente-card {
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 16px;
-  padding: 16px;
-  transition: all 0.2s ease;
-  animation: fadeUp 0.2s ease both;
-  margin-bottom: 12px;
+  border-radius: 20px;
+  padding: 20px;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fadeUp 0.3s ease both;
+  margin-bottom: 16px;
 }
 .cliente-card:hover {
   border-color: var(--accent);
-  box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+  transform: translateY(-3px);
+}
   transform: translateY(-2px);
 }
 .cliente-nombre {

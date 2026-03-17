@@ -26,17 +26,30 @@ document.addEventListener('touchmove', e => {
 function init() {
   loadTheme();
   
+  // Cargar usuario y rol
+  const savedUser = localStorage.getItem('pd_user');
+  if (savedUser) {
+    try {
+      const u = JSON.parse(savedUser);
+      S.usuario = u;
+      S.rol = u.rol || 'usuario';
+      S.esAdmin = u.es_admin || false;
+    } catch(e) {}
+  }
+  
   // Cargar empresa guardada en login si existe
   const savedEmpresa = localStorage.getItem('pd_empresa');
   if (savedEmpresa) {
     try {
       const emp = JSON.parse(savedEmpresa);
+      S.empresa = emp;
       const logoArea = document.getElementById('logoAurea');
       const logoEmp = document.getElementById('logoEmpresa');
       const logoImg = document.getElementById('loginLogoImg');
       const logoNom = document.getElementById('loginEmpresaNombre');
       
-      if (emp && (emp.logo_login_url || emp.nombre || emp.empresa)) {
+      // Solo mostrar logo si hay sesión activa
+      if (S.token && emp && (emp.logo_login_url || emp.nombre || emp.empresa)) {
         if (logoArea) logoArea.style.display = 'none';
         if (logoEmp) {
           logoEmp.style.display = 'flex';
