@@ -36,7 +36,6 @@ router.post('/login', async (req, res) => {
       .from('usuarios')
       .select('id, nombre, pin_hash, es_admin, activo, metodo_login, rol');
 
-    console.log('Usuarios BD:', JSON.stringify(usuarios));
     if (error) throw error;
 
     let usuarioValido = null;
@@ -44,7 +43,6 @@ router.post('/login', async (req, res) => {
     if (pin) {
       // Autenticación por PIN — busca en todos los usuarios activos
       for (const u of usuarios) {
-        console.log('Usuario:', u.nombre, 'rol:', u.rol);
         if (!u.activo) continue;
         const match = await bcrypt.compare(String(pin), u.pin_hash);
         if (match) { usuarioValido = u; break; }

@@ -38,6 +38,20 @@ async function getItems(idEvento) {
   }));
 }
 
+async function actualizarTotalEvento(idEvento) {
+  const { data: items } = await supabase
+    .from('detalle_cotizacion')
+    .select('total')
+    .eq('id_ev', idEvento);
+  
+  const total = (items || []).reduce((sum, it) => sum + (parseFloat(it.total) || 0), 0);
+  
+  await supabase
+    .from('eventos')
+    .update({ total, saldo: total })
+    .eq('id', idEvento);
+}
+
 // GET /api/items/:idEvento
 router.get('/:idEvento', requireAuth, async (req, res) => {
   try {
@@ -107,7 +121,8 @@ router.post('/:idEvento', requireAuth, async (req, res) => {
       });
     }
 
-    // Retornar lista actualizada (el trigger ya actualizó eventos.total)
+    // Retornar lista actualizada
+    await actualizarTotalEvento(idEvento);
     res.json({ ok: true, items: await getItems(idEvento) });
   } catch (e) {
     console.error('POST items:', e.message);
@@ -159,6 +174,7 @@ router.post('/:idEvento/externo', requireAuth, async (req, res) => {
       });
     }
 
+    await actualizarTotalEvento(idEvento);
     res.json({ ok: true, items: await getItems(idEvento) });
   } catch (e) {
     console.error('POST externo:', e.message);
@@ -186,6 +202,7 @@ router.patch('/:idEvento/cantidad', requireAuth, async (req, res) => {
         .delete()
         .eq('id_ev', idEvento)
         .eq('nombre', nombre);
+      await actualizarTotalEvento(idEvento);
       return res.json({ ok: true });
     }
 
@@ -203,6 +220,7 @@ router.patch('/:idEvento/cantidad', requireAuth, async (req, res) => {
       .eq('id_ev', idEvento)
       .eq('nombre', nombre);
 
+    await actualizarTotalEvento(idEvento);
     res.json({ ok: true });
   } catch (e) {
     console.error('PATCH cantidad:', e.message);
@@ -238,6 +256,7 @@ router.patch('/:idEvento/precio', requireAuth, async (req, res) => {
       .eq('id_ev', idEvento)
       .eq('nombre', nombre);
 
+    await actualizarTotalEvento(idEvento);
     res.json({ ok: true });
   } catch (e) {
     console.error('PATCH precio:', e.message);
@@ -256,6 +275,7 @@ router.delete('/:idEvento/:nombre', requireAuth, async (req, res) => {
       .delete()
       .eq('id_ev', idEvento)
       .eq('nombre', decodeURIComponent(nombre));
+    await actualizarTotalEvento(idEvento);
     res.json({ ok: true });
   } catch (e) {
     console.error('DELETE item:', e.message);
@@ -274,6 +294,7 @@ router.delete('/:idEvento', requireAuth, requireAdmin, async (req, res) => {
       .from('detalle_cotizacion')
       .delete()
       .eq('id_ev', req.params.idEvento);
+    await actualizarTotalEvento(req.params.idEvento);
     res.json({ ok: true });
   } catch (e) {
     console.error('DELETE cotizacion:', e.message);

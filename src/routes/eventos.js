@@ -127,13 +127,13 @@ router.patch('/:id', requireAuth, async (req, res) => {
       if (existing.id_cli) {
         const clienteUpdates = {};
         if (d.nombre !== undefined) clienteUpdates.nombre = d.nombre;
-        if (d.tel1   !== undefined) clienteUpdates.tel1   = d.tel1;
+        if (d.tel1 !== undefined) clienteUpdates.tel1   = d.tel1;
         if (d.tel2   !== undefined) clienteUpdates.tel2   = d.tel2   || '';
         if (d.tipo_cli !== undefined) clienteUpdates.tipo = d.tipo_cli;
         if (d.fuente !== undefined) clienteUpdates.fuente = d.fuente;
         if (d.dir_cli !== undefined) clienteUpdates.dir   = d.dir_cli;
         if (Object.keys(clienteUpdates).length > 0) {
-          await supabase.from('clientes').update(clienteUpdates).eq('id', ev.id_cli);
+          await supabase.from('clientes').update(clienteUpdates).eq('id', existing.id_cli);
         }
       }
     }

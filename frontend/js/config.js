@@ -1,7 +1,6 @@
 // js/config.js — Configuración global del frontend
 const CONFIG = {
-  API_URL: 'https://partydecor-api-production.up.railway.app/api',
-  // API_URL: 'http://localhost:3000/api', // Desarrollo local
+  API_URL: window.APP_API_URL || 'https://partydecor-api-production.up.railway.app/api',
 };
 
 const TEMAS = ['neutro', 'rosa', 'gold', 'sage', 'lavender', 'ocean'];

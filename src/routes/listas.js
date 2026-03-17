@@ -38,13 +38,22 @@ router.get('/clientes', requireAuth, async (req, res) => {
 router.get('/catalogo', requireAuth, async (req, res) => {
   try {
     const { limit = 500, offset = 0 } = req.query;
-    const { data, error } = await supabase
+    const idEmpresa = req.user.empresa_id;
+    
+    let query = supabase
       .from('catalogo_precios')
       .select('id, categoria, nombre, tipo_precio, precio, unidad, permite_cambio, notas', { count: 'exact' })
       .eq('activo', true)
       .order('categoria')
       .order('nombre')
       .range(Number(offset), Number(offset) + Number(limit) - 1);
+    
+    // Filtrar por empresa si existe, sino mostrar los globales
+    if (idEmpresa) {
+      query = query.or(`id_empresa.eq.${idEmpresa},id_empresa.is.null`);
+    }
+    
+    const { data, error } = await query;
     if (error) throw error;
 
     const items = (data || []).map(i => ({
