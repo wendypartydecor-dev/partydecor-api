@@ -94,6 +94,8 @@ export const aureaTheme: Config['theme'] = {
       'flip-in': 'flipIn 150ms ease-out',
       'item-enter': 'itemEnter 200ms ease-out',
       'item-exit': 'itemExit 180ms ease-in forwards',
+      'shake': 'shake 320ms ease-out',
+      'fade-in': 'fadeIn 240ms ease-out',
     },
     keyframes: {
       ambientPulse: {
@@ -111,6 +113,15 @@ export const aureaTheme: Config['theme'] = {
       itemExit: {
         '0%': { opacity: '1', transform: 'translateX(0)', maxHeight: '100px' },
         '100%': { opacity: '0', transform: 'translateX(8px)', maxHeight: '0', marginBottom: '0' },
+      },
+      shake: {
+        '0%, 100%': { transform: 'translateX(0)' },
+        '10%, 30%, 50%, 70%, 90%': { transform: 'translateX(-4px)' },
+        '20%, 40%, 60%, 80%': { transform: 'translateX(4px)' },
+      },
+      fadeIn: {
+        '0%': { opacity: '0', transform: 'translateY(6px)' },
+        '100%': { opacity: '1', transform: 'translateY(0)' },
       },
     },
   },
