@@ -20,6 +20,7 @@
     ],
     "paths": {
       "@/*": ["./*"],
+      "@aurea/ui": ["../../packages/ui"],
       "@aurea/ui/*": ["../../packages/ui/*"],
       "@aurea/core/*": ["../../packages/core/*"],
       "@aurea/auth/*": ["../../packages/auth/*"],

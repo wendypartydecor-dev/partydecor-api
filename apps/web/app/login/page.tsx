@@ -1,13 +1,13 @@
 'use client';
 
-import { LoginScreen } from 'packages/ui';
+import { LoginScreen } from '@aurea/ui';
 import { useRouter } from 'next/navigation';
-import type { AuthFlowState } from 'packages/auth/types/auth.types';
+import type { TenantSummary } from '@aurea/auth/types/auth.types';
 
 export default function LoginPage() {
   const router = useRouter();
 
-  const handleLoginSuccess = (state: AuthFlowState) => {
+  const handleLoginSuccess = (state: { step: string; tenantId: string }) => {
     if (state.step === 'workspace_redirect') {
       router.push(`/eventos?tenant=${state.tenantId}`);
     }
