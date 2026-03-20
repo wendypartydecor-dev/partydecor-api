@@ -77,6 +77,9 @@ export const aureaTheme: Config['theme'] = {
       'panel-padding': '24px',
       'card-padding': '16px',
       'tab-height': '40px',
+      'canvas-padding': '20px',
+      'item-row': '64px',
+      'float-summary': '144px',
     },
     transitionDuration: {
       fast: '120ms',
@@ -88,11 +91,26 @@ export const aureaTheme: Config['theme'] = {
     },
     animation: {
       'ambient-pulse': 'ambientPulse 2s ease-in-out infinite',
+      'flip-in': 'flipIn 150ms ease-out',
+      'item-enter': 'itemEnter 200ms ease-out',
+      'item-exit': 'itemExit 180ms ease-in forwards',
     },
     keyframes: {
       ambientPulse: {
         '0%, 100%': { opacity: '1' },
         '50%': { opacity: '0.6' },
+      },
+      flipIn: {
+        '0%': { transform: 'translateY(-8px)', opacity: '0' },
+        '100%': { transform: 'translateY(0)', opacity: '1' },
+      },
+      itemEnter: {
+        '0%': { opacity: '0', transform: 'translateY(8px)' },
+        '100%': { opacity: '1', transform: 'translateY(0)' },
+      },
+      itemExit: {
+        '0%': { opacity: '1', transform: 'translateX(0)', maxHeight: '100px' },
+        '100%': { opacity: '0', transform: 'translateX(8px)', maxHeight: '0', marginBottom: '0' },
       },
     },
   },
