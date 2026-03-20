@@ -1,0 +1,18 @@
+@import 'tailwindcss';
+
+:root {
+  --aurea-gold: oklch(0.75 0.15 85);
+  --aurea-gold-hover: oklch(0.7 0.18 85);
+}
+
+body {
+  background-color: oklch(0.98 0 0);
+  color: oklch(0.15 0 0);
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: oklch(0.13 0 0);
+    color: oklch(0.95 0 0);
+  }
+}

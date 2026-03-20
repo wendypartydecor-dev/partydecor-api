@@ -1,0 +1,172 @@
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Inter',system-ui,sans-serif}
+.login-shell{min-height:560px;background:var(--color-background-tertiary);display:flex;align-items:center;justify-content:center;padding:32px 16px;border-radius:16px}
+.login-card{width:100%;max-width:360px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:20px;padding:40px 32px;display:flex;flex-direction:column;gap:28px}
+.brand-block{display:flex;flex-direction:column;align-items:center;gap:10px}
+.brand-wordmark{font-size:26px;font-weight:500;letter-spacing:-0.03em;color:var(--color-text-primary)}
+.brand-wordmark span{color:oklch(78% 0.12 75)}
+.brand-sub{font-size:12px;color:var(--color-text-tertiary);letter-spacing:.02em}
+.mode-switch{display:flex;background:var(--color-background-secondary);border-radius:10px;padding:3px;gap:2px}
+.mode-btn{flex:1;padding:7px 0;border:none;background:none;font-size:12px;font-weight:500;color:var(--color-text-secondary);border-radius:7px;cursor:pointer;transition:all .18s;font-family:inherit}
+.mode-btn.active{background:var(--color-background-primary);color:var(--color-text-primary);border:0.5px solid var(--color-border-tertiary)}
+.form-pass{display:flex;flex-direction:column;gap:14px}
+.fg{display:flex;flex-direction:column;gap:5px}
+.fl{font-size:10px;font-weight:500;color:var(--color-text-secondary);text-transform:uppercase;letter-spacing:.07em}
+.fi{background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:10px;padding:11px 14px;font-size:14px;color:var(--color-text-primary);width:100%;outline:none;transition:border-color .15s;font-family:inherit}
+.fi:focus{border-color:oklch(78% 0.12 75);box-shadow:0 0 0 3px oklch(78% 0.12 75 / 0.12)}
+.fi::placeholder{color:var(--color-text-tertiary)}
+.btn-primary{width:100%;padding:13px;border:none;border-radius:11px;background:oklch(78% 0.12 75);color:oklch(18% 0.06 75);font-size:14px;font-weight:500;cursor:pointer;transition:all .15s;font-family:inherit;letter-spacing:-.01em}
+.btn-primary:hover{background:oklch(82% 0.14 75)}
+.btn-primary:active{transform:scale(.98)}
+.btn-primary:disabled{background:var(--color-background-secondary);color:var(--color-text-tertiary);cursor:default;transform:none}
+.btn-primary.loading{background:var(--color-background-secondary);color:var(--color-text-secondary)}
+.btn-link{background:none;border:none;font-size:12px;color:var(--color-text-tertiary);cursor:pointer;font-family:inherit;text-decoration:none;transition:color .15s;padding:0;text-align:center}
+.btn-link:hover{color:var(--color-text-secondary)}
+.form-pin{display:flex;flex-direction:column;gap:20px;align-items:center}
+.pin-dots{display:flex;gap:10px}
+.pin-dot{width:10px;height:10px;border-radius:50%;border:0.5px solid var(--color-border-secondary);background:var(--color-background-secondary);transition:all .12s}
+.pin-dot.filled{background:oklch(78% 0.12 75);border-color:oklch(78% 0.12 75);transform:scale(1.1)}
+.pin-dot.error{background:oklch(62% 0.18 30);border-color:oklch(62% 0.18 30)}
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
+.pin-key{height:52px;border:0.5px solid var(--color-border-tertiary);border-radius:12px;background:var(--color-background-secondary);font-size:18px;font-weight:400;color:var(--color-text-primary);cursor:pointer;transition:all .1s;font-family:inherit;display:flex;align-items:center;justify-content:center}
+.pin-key:hover{background:var(--color-background-primary);border-color:var(--color-border-secondary)}
+.pin-key:active{transform:scale(.94);background:oklch(78% 0.12 75 / 0.1)}
+.pin-key.del{font-size:16px;color:var(--color-text-secondary)}
+.pin-key.wide{grid-column:span 2}
+.err-msg{font-size:12px;color:oklch(45% 0.18 25);text-align:center;min-height:16px;transition:opacity .15s}
+.divider{height:0.5px;background:var(--color-border-tertiary)}
+@keyframes shake{0%,100%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}}
+.shake{animation:shake .32s ease-out}
+</style>
+
+<div class="login-shell">
+  <div class="login-card" id="loginCard">
+    <div class="brand-block">
+      <div class="brand-wordmark">Aure<span>a</span></div>
+      <div class="brand-sub">plataforma de operaciones</div>
+    </div>
+
+    <div class="mode-switch">
+      <button class="mode-btn active" id="btnModePass" onclick="setMode('pass')">Contraseña</button>
+      <button class="mode-btn" id="btnModePin" onclick="setMode('pin')">PIN</button>
+    </div>
+
+    <div id="formPass" class="form-pass">
+      <div class="fg">
+        <label class="fl">Usuario</label>
+        <input class="fi" type="text" id="inputUser" placeholder="tu.usuario" autocomplete="username" autocapitalize="none" oninput="checkPassForm()">
+      </div>
+      <div class="fg">
+        <label class="fl">Contraseña</label>
+        <input class="fi" type="password" id="inputPass" placeholder="••••••••" autocomplete="current-password" oninput="checkPassForm()" onkeydown="if(event.key==='Enter')doLogin()">
+      </div>
+      <div class="err-msg" id="passErr" style="opacity:0"> </div>
+      <button class="btn-primary" id="btnLogin" disabled onclick="doLogin()">Entrar</button>
+      <button class="btn-link" onclick="void(0)">¿Olvidaste tu contraseña?</button>
+    </div>
+
+    <div id="formPin" style="display:none" class="form-pin">
+      <div class="pin-dots" id="pinDots">
+        <div class="pin-dot" id="pd0"></div>
+        <div class="pin-dot" id="pd1"></div>
+        <div class="pin-dot" id="pd2"></div>
+        <div class="pin-dot" id="pd3"></div>
+      </div>
+      <div class="err-msg" id="pinErr" style="opacity:0"> </div>
+      <div class="pin-grid" id="pinGrid">
+        <button class="pin-key" onclick="pinPress('1')">1</button>
+        <button class="pin-key" onclick="pinPress('2')">2</button>
+        <button class="pin-key" onclick="pinPress('3')">3</button>
+        <button class="pin-key" onclick="pinPress('4')">4</button>
+        <button class="pin-key" onclick="pinPress('5')">5</button>
+        <button class="pin-key" onclick="pinPress('6')">6</button>
+        <button class="pin-key" onclick="pinPress('7')">7</button>
+        <button class="pin-key" onclick="pinPress('8')">8</button>
+        <button class="pin-key" onclick="pinPress('9')">9</button>
+        <button class="pin-key wide" onclick="pinPress('0')">0</button>
+        <button class="pin-key del" onclick="pinDel()">⌫</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+let mode='pass', pinBuf='', loginAttempts=0;
+
+function setMode(m){
+  mode=m;
+  document.getElementById('btnModePass').classList.toggle('active',m==='pass');
+  document.getElementById('btnModePin').classList.toggle('active',m==='pin');
+  document.getElementById('formPass').style.display=m==='pass'?'flex':'none';
+  document.getElementById('formPin').style.display=m==='pin'?'flex':'none';
+  pinBuf=''; updatePinDots();
+}
+
+function checkPassForm(){
+  const u=document.getElementById('inputUser').value.trim();
+  const p=document.getElementById('inputPass').value;
+  document.getElementById('btnLogin').disabled=!(u&&p.length>=4);
+}
+
+function showPassErr(msg){
+  const el=document.getElementById('passErr');
+  el.textContent=msg; el.style.opacity='1';
+  document.getElementById('loginCard').classList.add('shake');
+  setTimeout(()=>document.getElementById('loginCard').classList.remove('shake'),400);
+}
+
+function showPinErr(msg){
+  const el=document.getElementById('pinErr');
+  el.textContent=msg; el.style.opacity='1';
+  ['pd0','pd1','pd2','pd3'].forEach(id=>document.getElementById(id).classList.add('error'));
+  document.getElementById('loginCard').classList.add('shake');
+  setTimeout(()=>{
+    document.getElementById('loginCard').classList.remove('shake');
+    ['pd0','pd1','pd2','pd3'].forEach(id=>document.getElementById(id).classList.remove('error'));
+    pinBuf=''; updatePinDots();
+  },600);
+}
+
+function doLogin(){
+  const btn=document.getElementById('btnLogin');
+  btn.classList.add('loading'); btn.textContent='Verificando…'; btn.disabled=true;
+  document.getElementById('passErr').style.opacity='0';
+  setTimeout(()=>{
+    loginAttempts++;
+    if(loginAttempts===1){
+      showPassErr('Usuario o contraseña incorrectos');
+      btn.classList.remove('loading'); btn.textContent='Entrar'; btn.disabled=false;
+    } else {
+      btn.textContent='Entrando…';
+      setTimeout(()=>alert('✓ Demo: navegaría al Tenant Selector'),500);
+    }
+  },900);
+}
+
+function updatePinDots(){
+  for(let i=0;i<4;i++){
+    const d=document.getElementById('pd'+i);
+    d.classList.toggle('filled', i<pinBuf.length);
+  }
+}
+
+function pinPress(d){
+  if(pinBuf.length>=4) return;
+  pinBuf+=d; updatePinDots();
+  document.getElementById('pinErr').style.opacity='0';
+  if(pinBuf.length===4) setTimeout(()=>{
+    if(pinBuf==='1234'){
+      alert('✓ Demo: PIN correcto — navegaría al Tenant Selector');
+      pinBuf=''; updatePinDots();
+    } else {
+      showPinErr('PIN incorrecto');
+    }
+  },120);
+}
+
+function pinDel(){
+  pinBuf=pinBuf.slice(0,-1); updatePinDots();
+  document.getElementById('pinErr').style.opacity='0';
+}
+</script>

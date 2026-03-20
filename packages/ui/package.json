@@ -1,0 +1,16 @@
+{
+  "name": "@aurea/ui",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "lucide-react": "^0.469.0",
+    "@aurea/core": "*",
+    "@aurea/auth": "*"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  }
+}

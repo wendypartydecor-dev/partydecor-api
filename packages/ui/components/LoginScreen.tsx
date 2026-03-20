@@ -1,203 +1,148 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { Building2 } from 'lucide-react';
-import { LoginCard } from './login/LoginCard';
-import { TenantSelector } from './tenant/TenantSelector';
-import { useAuthStore } from '../../../../packages/auth/useAuth';
-import type { AuthFlowState, LoginMode, TenantSummary, AuthUser } from '../../../../packages/auth/types/auth.types';
+import type { TenantSummary } from '@aurea/auth/types/auth.types';
 
 interface LoginScreenProps {
-  onLoginSuccess: (state: AuthFlowState) => void;
-  onError: (error: string) => void;
+  onLoginSuccess?: (state: { step: string; tenantId: string }) => void;
+  onError?: (error: string) => void;
 }
 
 export function LoginScreen({ onLoginSuccess, onError }: LoginScreenProps) {
-  const { setUser, setCompanies, selectTenant } = useAuthStore();
-  
-  const [flowState, setFlowState] = useState<AuthFlowState>({ step: 'login' });
-  const [formState, setFormState] = useState({
-    mode: 'password' as LoginMode,
-    email: '',
-    password: '',
-    pin: '',
-    isSubmitting: false,
-    error: null as { type: string; message: string } | null,
-    attempts: 0,
-  });
+  const [step, setStep] = useState<'tenant' | 'credentials' | 'loading'>('tenant');
+  const [tenants] = useState<TenantSummary[]>([
+    { id: '1', nombre: 'Party Decor Tijuana', slug: 'pdtj', ultimaSesion: '2026-03-19' },
+    { id: '2', nombre: 'Decoraciones Express', slug: 'de', ultimaSesion: null },
+  ]);
+  const [selectedTenant, setSelectedTenant] = useState<TenantSummary | null>(null);
+  const [pin, setPin] = useState('');
+  const [error, setError] = useState('');
 
-  const handleLogin = useCallback(async (email: string, password: string) => {
-    setFormState(prev => ({ ...prev, isSubmitting: true, error: null }));
+  const handleSelectTenant = useCallback((tenant: TenantSummary) => {
+    setSelectedTenant(tenant);
+    setStep('credentials');
+  }, []);
 
-    try {
-      const supabase = (window as unknown as { supabase: SupabaseClient }).supabase;
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        setFormState(prev => ({
-          ...prev,
-          isSubmitting: false,
-          error: { type: 'invalid_credentials', message: error.message },
-          attempts: prev.attempts + 1,
-        }));
-        return;
-      }
-
-      if (data.user) {
-        const { data: tenantsData } = await supabase.rpc('get_user_tenants', {
-          user_id: data.user.id,
-        });
-
-        setUser(data.user.id, data.user.email || 'Usuario');
-
-        const tenants = (tenantsData || []) as TenantSummary[];
-        
-        if (tenants.length === 0) {
-          setFormState(prev => ({
-            ...prev,
-            isSubmitting: false,
-            error: { type: 'invalid_credentials', message: 'Usuario sin empresa activa' },
-          }));
-          return;
-        }
-
-        setCompanies(tenants);
-
-        if (tenants.length === 1) {
-          selectTenant(tenants[0]);
-          onLoginSuccess({
-            step: 'workspace_redirect',
-            tenantId: tenants[0].id,
-            token: 'temp-token',
-          });
-        } else {
-          const userInfo: AuthUser = {
-            id: data.user.id,
-            email: data.user.email || '',
-            displayName: data.user.email?.split('@')[0] || 'Usuario',
-            avatarInitials: (data.user.email?.[0] || 'U').toUpperCase(),
-            globalRole: 'user',
-          };
-          
-          onLoginSuccess({
-            step: 'tenant_select',
-            user: userInfo,
-            tenants,
-            tokenTemp: 'temp-token',
-          });
-        }
-      }
-    } catch (err) {
-      setFormState(prev => ({
-        ...prev,
-        isSubmitting: false,
-        error: { type: 'network', message: 'Error de conexión' },
-      }));
+  const handlePinSubmit = useCallback(() => {
+    if (pin === '1234') {
+      onLoginSuccess?.({ step: 'workspace_redirect', tenantId: selectedTenant?.id || '' });
+    } else {
+      setError('PIN incorrecto');
+      setTimeout(() => setError(''), 3000);
     }
-  }, [setUser, setCompanies, selectTenant, onLoginSuccess]);
+  }, [pin, selectedTenant, onLoginSuccess]);
 
-  const handlePinLogin = useCallback(async (pin: string) => {
-    setFormState(prev => ({ ...prev, isSubmitting: true, error: null }));
-    
-    try {
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      setFormState(prev => ({
-        ...prev,
-        isSubmitting: false,
-        error: { type: 'invalid_credentials', message: 'PIN incorrecto' },
-      }));
-    } catch {
-      setFormState(prev => ({
-        ...prev,
-        isSubmitting: false,
-        error: { type: 'network', message: 'Error de conexión' },
-      }));
-    }
-  }, []);
+  if (step === 'loading') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+        <div className="w-8 h-8 border-4 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+      </div>
+    );
+  }
 
-  const handleTenantSelect = useCallback(async (tenant: TenantSummary) => {
-    selectTenant(tenant);
-    
-    setFlowState({
-      step: 'selecting',
-      tenant,
-    });
-    
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    onLoginSuccess({
-      step: 'workspace_redirect',
-      tenantId: tenant.id,
-      token: 'final-token',
-    });
-  }, [selectTenant, onLoginSuccess]);
+  if (step === 'credentials') {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+        <div className="w-full max-w-sm p-8 bg-white rounded-2xl shadow-xl">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center">
+              <span className="text-2xl font-bold text-white">A</span>
+            </div>
+            <h1 className="text-xl font-semibold text-neutral-900">{selectedTenant?.nombre}</h1>
+            <p className="text-sm text-neutral-500 mt-1">Ingresa tu PIN</p>
+          </div>
 
-  const handleLogout = useCallback(() => {
-    useAuthStore.getState().signOut();
-    setFlowState({ step: 'login' });
-  }, []);
+          <div className="flex justify-center gap-3 mb-8">
+            {[0, 1, 2, 3].map((i) => (
+              <div
+                key={i}
+                className={`w-3 h-3 rounded-full transition-all ${
+                  pin.length > i ? 'bg-amber-500 scale-110' : 'bg-neutral-200'
+                }`}
+              />
+            ))}
+          </div>
 
-  const handleModeChange = useCallback((mode: LoginMode) => {
-    setFormState(prev => ({ ...prev, mode, error: null }));
-  }, []);
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg text-center">
+              {error}
+            </div>
+          )}
+
+          <div className="grid grid-cols-3 gap-3">
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, 'del'].map((key, idx) => (
+              <button
+                key={idx}
+                onClick={() => {
+                  if (key === 'del') {
+                    setPin((p) => p.slice(0, -1));
+                  } else if (key !== '' && pin.length < 4) {
+                    const newPin = pin + key;
+                    setPin(newPin);
+                    if (newPin.length === 4) {
+                      setTimeout(handlePinSubmit, 100);
+                    }
+                  }
+                }}
+                className={`h-14 rounded-xl text-lg font-medium transition-all active:scale-95 ${
+                  key === ''
+                    ? 'bg-transparent'
+                    : key === 'del'
+                    ? 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
+                    : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-900'
+                }`}
+              >
+                {key === 'del' ? '⌫' : key}
+              </button>
+            ))}
+          </div>
+
+          <button
+            onClick={() => setStep('tenant')}
+            className="w-full mt-6 text-sm text-neutral-500 hover:text-neutral-700"
+          >
+            ← Cambiar empresa
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-neutral-50 to-neutral-100 dark:from-neutral-950 dark:to-neutral-900 p-4">
-      <div className="absolute top-8 left-1/2 -translate-x-1/2 flex items-center gap-3">
-        <div className="w-10 h-10 rounded-xl bg-[oklch(78%_0.12_75)] flex items-center justify-center">
-          <Building2 className="w-6 h-6 text-white" />
+    <div className="min-h-screen flex items-center justify-center bg-neutral-50">
+      <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl">
+        <div className="text-center mb-8">
+          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center">
+            <span className="text-2xl font-bold text-white">A</span>
+          </div>
+          <h1 className="text-2xl font-bold text-neutral-900">Aurea</h1>
+          <p className="text-neutral-500 mt-1">Selecciona tu empresa</p>
         </div>
-        <span className="text-[26px] font-medium tracking-[-0.03em] text-neutral-900 dark:text-neutral-100">
-          Aurea
-        </span>
+
+        <div className="space-y-3">
+          {tenants.map((tenant) => (
+            <button
+              key={tenant.id}
+              onClick={() => handleSelectTenant(tenant)}
+              className="w-full p-4 text-left rounded-xl border border-neutral-200 hover:border-amber-400 hover:bg-amber-50 transition-all group"
+            >
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-medium text-neutral-900 group-hover:text-amber-700">
+                    {tenant.nombre}
+                  </h3>
+                  <p className="text-sm text-neutral-500">{tenant.slug}</p>
+                </div>
+                {tenant.ultimaSesion && (
+                  <span className="text-xs text-neutral-400">
+                    Última: {new Date(tenant.ultimaSesion).toLocaleDateString('es-MX')}
+                  </span>
+                )}
+              </div>
+            </button>
+          ))}
+        </div>
       </div>
-
-      {flowState.step === 'login' && (
-        <LoginCard
-          onSubmit={handleLogin}
-          onSubmitPin={handlePinLogin}
-          formState={formState}
-          onModeChange={handleModeChange}
-        />
-      )}
-
-      {flowState.step === 'tenant_select' && (
-        <TenantSelector
-          state={{
-            status: 'ready',
-            tenants: flowState.tenants,
-            user: flowState.user,
-          }}
-          onSelect={handleTenantSelect}
-          onLogout={handleLogout}
-        />
-      )}
-
-      {flowState.step === 'selecting' && flowState.tenant && (
-        <TenantSelector
-          state={{
-            status: 'selecting',
-            tenant: flowState.tenant,
-          }}
-          onSelect={handleTenantSelect}
-          onLogout={handleLogout}
-        />
-      )}
     </div>
   );
-}
-
-interface SupabaseClient {
-  auth: {
-    signInWithPassword: (credentials: { email: string; password: string }) => Promise<{
-      data: { user: { id: string; email?: string } | null };
-      error: { message: string } | null;
-    }>;
-    signOut: () => Promise<{ error: unknown }>;
-  };
-  rpc: (fn: string, params: Record<string, unknown>) => Promise<{ data: unknown; error: unknown }>;
 }

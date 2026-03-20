@@ -1,0 +1,14 @@
+{
+  "name": "@aurea/auth",
+  "version": "1.0.0",
+  "private": true,
+  "main": "./index.ts",
+  "types": "./index.ts",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "zustand": "^5.0.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0"
+  }
+}
