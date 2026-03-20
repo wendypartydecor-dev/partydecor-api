@@ -1,8 +1,11 @@
-@import 'tailwindcss';
+@import "tailwindcss";
 
-:root {
-  --aurea-gold: oklch(0.75 0.15 85);
-  --aurea-gold-hover: oklch(0.7 0.18 85);
+@theme {
+  --color-aurea-gold: oklch(0.75 0.15 85);
+  --color-aurea-gold-hover: oklch(0.7 0.18 85);
+  
+  --animate-spin-slow: spin 2s linear infinite;
+  --animate-pulse-subtle: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 body {
