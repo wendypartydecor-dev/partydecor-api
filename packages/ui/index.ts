@@ -16,3 +16,4 @@ export * from './tokens/tailwind.tokens';
 export * from './cotizaciones';
 export * from './pdf/QuotePDFPreview';
 export * from './command-palette/flows/add-catalog-item.flow';
+export { CompanySelector, NoCompanyError } from './components/CompanySelector';
