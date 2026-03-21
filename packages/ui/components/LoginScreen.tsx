@@ -6,14 +6,11 @@ import type { TenantSummary } from '@aurea/auth/types/auth.types';
 interface LoginScreenProps {
   onLoginSuccess?: (state: { step: string; tenantId: string }) => void;
   onError?: (error: string) => void;
+  tenants?: TenantSummary[];
 }
 
-export function LoginScreen({ onLoginSuccess, onError }: LoginScreenProps) {
+export function LoginScreen({ onLoginSuccess, onError, tenants = [] }: LoginScreenProps) {
   const [step, setStep] = useState<'tenant' | 'credentials' | 'loading'>('tenant');
-  const [tenants] = useState<TenantSummary[]>([
-    { id: '1', nombre: 'Party Decor Tijuana', slug: 'pdtj', ultimaSesion: '2026-03-19' },
-    { id: '2', nombre: 'Decoraciones Express', slug: 'de', ultimaSesion: null },
-  ]);
   const [selectedTenant, setSelectedTenant] = useState<TenantSummary | null>(null);
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
@@ -34,22 +31,22 @@ export function LoginScreen({ onLoginSuccess, onError }: LoginScreenProps) {
 
   if (step === 'loading') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-        <div className="w-8 h-8 border-4 border-amber-400/30 border-t-amber-400 rounded-full animate-spin" />
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="w-8 h-8 border-4 border-amber-500/30 border-t-amber-500 rounded-full animate-spin" />
       </div>
     );
   }
 
   if (step === 'credentials') {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-        <div className="w-full max-w-sm p-8 bg-white rounded-2xl shadow-xl">
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="w-full max-w-sm p-8 bg-neutral-900 rounded-2xl shadow-xl border border-neutral-800">
           <div className="text-center mb-8">
             <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center">
               <span className="text-2xl font-bold text-white">A</span>
             </div>
-            <h1 className="text-xl font-semibold text-neutral-900">{selectedTenant?.nombre}</h1>
-            <p className="text-sm text-neutral-500 mt-1">Ingresa tu PIN</p>
+            <h1 className="text-xl font-semibold text-white">{selectedTenant?.nombre}</h1>
+            <p className="text-sm text-neutral-400 mt-1">Ingresa tu PIN</p>
           </div>
 
           <div className="flex justify-center gap-3 mb-8">
@@ -57,14 +54,14 @@ export function LoginScreen({ onLoginSuccess, onError }: LoginScreenProps) {
               <div
                 key={i}
                 className={`w-3 h-3 rounded-full transition-all ${
-                  pin.length > i ? 'bg-amber-500 scale-110' : 'bg-neutral-200'
+                  pin.length > i ? 'bg-amber-500 scale-110' : 'bg-neutral-700'
                 }`}
               />
             ))}
           </div>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 text-red-600 text-sm rounded-lg text-center">
+            <div className="mb-4 p-3 bg-red-900/50 text-red-400 text-sm rounded-lg text-center border border-red-800">
               {error}
             </div>
           )}
@@ -88,8 +85,8 @@ export function LoginScreen({ onLoginSuccess, onError }: LoginScreenProps) {
                   key === ''
                     ? 'bg-transparent'
                     : key === 'del'
-                    ? 'bg-neutral-100 text-neutral-600 hover:bg-neutral-200'
-                    : 'bg-neutral-100 hover:bg-neutral-200 text-neutral-900'
+                    ? 'bg-neutral-800 text-neutral-400 hover:bg-neutral-700'
+                    : 'bg-neutral-800 hover:bg-neutral-700 text-white'
                 }`}
               >
                 {key === 'del' ? '⌫' : key}
@@ -99,7 +96,7 @@ export function LoginScreen({ onLoginSuccess, onError }: LoginScreenProps) {
 
           <button
             onClick={() => setStep('tenant')}
-            className="w-full mt-6 text-sm text-neutral-500 hover:text-neutral-700"
+            className="w-full mt-6 text-sm text-neutral-500 hover:text-neutral-300"
           >
             ← Cambiar empresa
           </button>
@@ -108,15 +105,31 @@ export function LoginScreen({ onLoginSuccess, onError }: LoginScreenProps) {
     );
   }
 
+  if (tenants.length === 0) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="w-full max-w-md p-8 bg-neutral-900 rounded-2xl shadow-xl border border-neutral-800">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center">
+              <span className="text-2xl font-bold text-white">A</span>
+            </div>
+            <h1 className="text-2xl font-bold text-white">Aurea</h1>
+            <p className="text-neutral-400 mt-1">Cargando empresas...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen flex items-center justify-center bg-neutral-50">
-      <div className="w-full max-w-md p-8 bg-white rounded-2xl shadow-xl">
+    <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="w-full max-w-md p-8 bg-neutral-900 rounded-2xl shadow-xl border border-neutral-800">
         <div className="text-center mb-8">
           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center">
             <span className="text-2xl font-bold text-white">A</span>
           </div>
-          <h1 className="text-2xl font-bold text-neutral-900">Aurea</h1>
-          <p className="text-neutral-500 mt-1">Selecciona tu empresa</p>
+          <h1 className="text-2xl font-bold text-white">Aurea</h1>
+          <p className="text-neutral-400 mt-1">Selecciona tu empresa</p>
         </div>
 
         <div className="space-y-3">
@@ -124,17 +137,17 @@ export function LoginScreen({ onLoginSuccess, onError }: LoginScreenProps) {
             <button
               key={tenant.id}
               onClick={() => handleSelectTenant(tenant)}
-              className="w-full p-4 text-left rounded-xl border border-neutral-200 hover:border-amber-400 hover:bg-amber-50 transition-all group"
+              className="w-full p-4 text-left rounded-xl border border-neutral-700 hover:border-amber-500 hover:bg-neutral-800 transition-all group"
             >
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-medium text-neutral-900 group-hover:text-amber-700">
+                  <h3 className="font-medium text-white group-hover:text-amber-400">
                     {tenant.nombre}
                   </h3>
                   <p className="text-sm text-neutral-500">{tenant.slug}</p>
                 </div>
                 {tenant.ultimaSesion && (
-                  <span className="text-xs text-neutral-400">
+                  <span className="text-xs text-neutral-600">
                     Última: {new Date(tenant.ultimaSesion).toLocaleDateString('es-MX')}
                   </span>
                 )}

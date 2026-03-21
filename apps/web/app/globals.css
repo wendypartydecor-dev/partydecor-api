@@ -10,15 +10,18 @@
 @theme {
   --color-aurea-gold: oklch(0.85 0.2 95);
   --color-aurea-gold-hover: oklch(0.8 0.22 95);
-  --background: oklch(0 0 0);
-  --foreground: oklch(1 0 0);
 }
 
 @layer base {
+  :root {
+    --background: 0 0% 0%;
+    --foreground: 0 0% 100%;
+  }
   html, body {
-    background-color: oklch(0 0 0);
-    color: oklch(1 0 0);
+    background-color: black !important;
+    color: white !important;
     margin: 0;
     padding: 0;
+    min-height: 100vh;
   }
 }
