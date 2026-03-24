@@ -11,7 +11,6 @@ interface AuthContextType {
   tenantStatus: TenantSelectorStatus;
   selectingTenantId: string | null;
   error: string | null;
-  loginWithPassword: (email: string, password: string) => Promise<{ error: string | null }>;
   loginWithPin: (email: string, pin: string) => Promise<{ error: string | null }>;
   selectTenant: (tenant: TenantSummary) => void;
   logout: () => Promise<void>;
@@ -57,6 +56,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('usuario_id', userId);
 
     if (fetchError) {
+      console.error('Fetch tenants error:', fetchError);
       setError('Error al cargar empresas');
       setTenantStatus('error');
       return;
@@ -73,74 +73,89 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setTenantStatus('ready');
   }, []);
 
-  useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email || '',
-          displayName: session.user.email?.split('@')[0] || 'Usuario',
-          avatarInitials: (session.user.email?.[0] || 'U').toUpperCase(),
-        });
-        fetchTenants(session.user.id);
-      } else {
-        setTenantStatus('ready');
-      }
-    });
+  const loadStoredSession = useCallback(async () => {
+    const storedToken = localStorage.getItem('aurea_auth_token');
+    const storedUser = localStorage.getItem('aurea_user');
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' && session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email || '',
-          displayName: session.user.email?.split('@')[0] || 'Usuario',
-          avatarInitials: (session.user.email?.[0] || 'U').toUpperCase(),
+    if (storedToken && storedUser) {
+      try {
+        await supabase.auth.setSession({
+          access_token: storedToken,
+          refresh_token: '',
         });
-        await fetchTenants(session.user.id);
-      } else if (event === 'SIGNED_OUT') {
-        setUser(null);
-        setTenants([]);
-        setSelectingTenantId(null);
-        setTenantStatus('ready');
+        
+        const userData = JSON.parse(storedUser);
+        setUser({
+          id: userData.id,
+          email: userData.email,
+          displayName: userData.email.split('@')[0],
+          avatarInitials: userData.email[0].toUpperCase(),
+        });
+        
+        await fetchTenants(userData.id);
+        return;
+      } catch (e) {
+        console.error('Error loading stored session:', e);
       }
-    });
-
-    return () => subscription.unsubscribe();
+    }
+    
+    setTenantStatus('ready');
   }, [fetchTenants]);
 
-  const loginWithPassword = useCallback(async (email: string, password: string) => {
-    setError(null);
-    setTenantStatus('loading');
-
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (authError) {
-      setError(authError.message);
-      setTenantStatus('error');
-      return { error: authError.message };
-    }
-
-    return { error: null };
-  }, []);
+  useEffect(() => {
+    loadStoredSession();
+  }, [loadStoredSession]);
 
   const loginWithPin = useCallback(async (email: string, pin: string) => {
     setError(null);
     setTenantStatus('loading');
 
-    const { data, error: rpcError } = await supabase.rpc('authenticate_with_pin', {
-      user_email: email,
-      user_pin: pin,
-    });
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.toLowerCase(), pin }),
+      });
 
-    if (rpcError || !data || data.length === 0) {
-      const msg = 'Credenciales inválidas';
+      const result = await response.json();
+
+      if (!response.ok) {
+        const msg = result.error || 'Credenciales inválidas';
+        setError(msg);
+        setTenantStatus('error');
+        return { error: msg };
+      }
+
+      const { token, user: userData } = result;
+
+      await supabase.auth.setSession({
+        access_token: token,
+        refresh_token: '',
+      });
+
+      const displayName = userData.email.split('@')[0];
+      const userForStore = {
+        id: userData.id,
+        email: userData.email,
+        displayName,
+        avatarInitials: userData.email[0].toUpperCase(),
+      };
+
+      localStorage.setItem('aurea_auth_token', token);
+      localStorage.setItem('aurea_user', JSON.stringify(userForStore));
+
+      setUser(userForStore);
+      await fetchTenants(userData.id);
+
+      return { error: null };
+    } catch (err) {
+      console.error('Login error:', err);
+      const msg = 'Error de conexión';
       setError(msg);
       setTenantStatus('error');
       return { error: msg };
     }
-
-    return { error: null };
-  }, []);
+  }, [fetchTenants]);
 
   const selectTenant = useCallback((tenant: TenantSummary) => {
     setSelectingTenantId(tenant.id);
@@ -156,10 +171,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   const logout = useCallback(async () => {
+    localStorage.removeItem('aurea_auth_token');
+    localStorage.removeItem('aurea_user');
+    localStorage.removeItem('aurea_last_tenant_id');
+    
     await supabase.auth.signOut();
+    
     setUser(null);
     setTenants([]);
     setSelectingTenantId(null);
+    setTenantStatus('ready');
     router.push('/login');
   }, [router]);
 
@@ -174,7 +195,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       tenantStatus,
       selectingTenantId,
       error,
-      loginWithPassword,
       loginWithPin,
       selectTenant,
       logout,
