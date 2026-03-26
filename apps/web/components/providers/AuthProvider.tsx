@@ -106,6 +106,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     loadStoredSession();
   }, [loadStoredSession]);
 
+  useEffect(() => {
+    console.log('--- AUTH STATE MONITOR ---');
+    console.log('User:', user);
+    console.log('Tenant Status:', tenantStatus);
+    console.log('Tenants count:', tenants.length);
+    console.log('Session Token:', localStorage.getItem('aurea_auth_token') ? 'Present' : 'Missing');
+    console.log('Error:', error);
+    console.log('--- END AUTH MONITOR ---');
+  }, [user, tenantStatus, tenants.length, error]);
+
   const loginWithPin = useCallback(async (email: string, pin: string) => {
     setError(null);
     setTenantStatus('loading');
@@ -128,10 +138,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const { token, user: userData } = result;
 
-      await supabase.auth.setSession({
+      console.log('=== SET SESSION DEBUG ===');
+      console.log('Token length:', token?.length);
+      console.log('Setting session with token...');
+      
+      const sessionResult = await supabase.auth.setSession({
         access_token: token,
         refresh_token: '',
       });
+      
+      console.log('setSession result:', sessionResult);
+      console.log('setSession error:', sessionResult.error);
+      console.log('=== END SET SESSION ===');
 
       const displayName = userData.email.split('@')[0];
       const userForStore = {

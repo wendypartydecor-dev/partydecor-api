@@ -101,6 +101,14 @@ export default function LoginPage() {
   };
 
   if (!user || tenantStatus === 'ready' || tenantStatus === 'error') {
+    console.warn('=== LOGIN PAGE DECISION ===');
+    console.warn('Redirecting to PIN because:', {
+      hasUser: !!user,
+      tenantStatus,
+      hasTenants: tenants.length,
+      error
+    });
+    console.warn('========================');
     return <PinPad onSubmit={handlePinSubmit} />;
   }
 
