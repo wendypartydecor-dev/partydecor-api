@@ -9,6 +9,12 @@ export async function POST(request: NextRequest) {
   try {
     const { email, pin } = await request.json();
 
+    console.log('=== AUTH DEBUG ===');
+    console.log('Email received:', email);
+    console.log('JWT Secret Length:', process.env.SUPABASE_JWT_SECRET?.length || 0);
+    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+    console.log('==================');
+
     if (!email || !pin) {
       return NextResponse.json(
         { error: 'Email y PIN son requeridos' },
