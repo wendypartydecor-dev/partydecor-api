@@ -81,7 +81,7 @@ export default function LoginPage() {
   const { user, tenants, tenantStatus, selectingTenantId, error, loginWithPin, selectTenant, logout } = useAuth();
 
   const handlePinSubmit = async (pin: string) => {
-    const email = 'demo@aurea.mx';
+    const email = 'admin@aurea.com';
     const result = await loginWithPin(email, pin);
     if (result.error) {
       // El error se maneja en el PinPad localmente

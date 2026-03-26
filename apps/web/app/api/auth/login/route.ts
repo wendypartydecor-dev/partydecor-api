@@ -39,9 +39,9 @@ export async function POST(request: NextRequest) {
     const userData = data[0] as { user_id: string; empresa_id: string; rol: string };
 
     if (!JWT_SECRET) {
-      console.error('SUPABASE_JWT_SECRET not configured');
+      console.error('JWT Secret missing: SUPABASE_JWT_SECRET environment variable is not set');
       return NextResponse.json(
-        { error: 'Configuración de servidor incompleta' },
+        { error: 'Error de configuración del servidor' },
         { status: 500 }
       );
     }
