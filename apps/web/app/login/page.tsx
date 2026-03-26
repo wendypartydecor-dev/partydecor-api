@@ -1,22 +1,22 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '../../components/providers/AuthProvider';
 import { TenantSelector } from '@aurea/ui/src/tenant-selector/TenantSelector';
 
-function PinPad({ onSubmit }: { onSubmit: (pin: string) => void }) {
+function PinPad({ onSubmit, disabled }: { onSubmit: (pin: string) => void; disabled?: boolean }) {
   const [pin, setPin] = useState('');
-  const [error, setError] = useState<string | null>(null);
 
   const handleKey = (key: string) => {
+    if (disabled) return;
     if (key === 'del') {
       setPin(p => p.slice(0, -1));
-      setError(null);
     } else if (key !== '' && pin.length < 4) {
       const newPin = pin + key;
       setPin(newPin);
       if (newPin.length === 4) {
         onSubmit(newPin);
+        setPin('');
       }
     }
   };
@@ -45,18 +45,15 @@ function PinPad({ onSubmit }: { onSubmit: (pin: string) => void }) {
           ))}
         </div>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-900/50 text-red-400 text-sm rounded-lg text-center border border-red-800">
-            {error}
-          </div>
-        )}
-
         <div className="grid grid-cols-3 gap-3">
           {[1, 2, 3, 4, 5, 6, 7, 8, 9, '', 0, 'del'].map((key, idx) => (
             <button
               key={idx}
               onClick={() => handleKey(String(key))}
-              className={`h-14 rounded-xl text-lg font-medium transition-all active:scale-95 ${
+              disabled={disabled}
+              className={`h-14 rounded-xl text-lg font-medium transition-all ${
+                disabled ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'
+              } ${
                 key === ''
                   ? 'bg-transparent'
                   : key === 'del'
@@ -68,10 +65,20 @@ function PinPad({ onSubmit }: { onSubmit: (pin: string) => void }) {
             </button>
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
 
-        <p className="text-center text-xs text-neutral-600 mt-6">
-          Demo: PIN 1234
-        </p>
+function LoadingScreen() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-black">
+      <div className="text-center">
+        <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-500 flex items-center justify-center">
+          <span className="text-2xl font-bold text-white">A</span>
+        </div>
+        <div className="w-8 h-8 border-2 border-neutral-700 border-t-amber-500 rounded-full animate-spin mx-auto" />
+        <p className="text-neutral-400 mt-4 text-sm">Iniciando sesión...</p>
       </div>
     </div>
   );
@@ -79,12 +86,20 @@ function PinPad({ onSubmit }: { onSubmit: (pin: string) => void }) {
 
 export default function LoginPage() {
   const { user, tenants, tenantStatus, selectingTenantId, error, loginWithPin, selectTenant, logout } = useAuth();
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setIsAuthenticating(false);
+    }
+  }, [user]);
 
   const handlePinSubmit = async (pin: string) => {
+    setIsAuthenticating(true);
     const email = 'admin@aurea.com';
     const result = await loginWithPin(email, pin);
     if (result.error) {
-      // El error se maneja en el PinPad localmente
+      setIsAuthenticating(false);
     }
   };
 
@@ -100,18 +115,17 @@ export default function LoginPage() {
     error,
   };
 
-  if (!user || tenantStatus === 'ready' || tenantStatus === 'error') {
-    console.warn('=== LOGIN PAGE DECISION ===');
-    console.warn('Redirecting to PIN because:', {
-      hasUser: !!user,
-      tenantStatus,
-      hasTenants: tenants.length,
-      error
-    });
-    console.warn('========================');
-    return <PinPad onSubmit={handlePinSubmit} />;
+  // Si estamos autenticando, mostrar loading
+  if (isAuthenticating) {
+    return <LoadingScreen />;
   }
 
+  // Si NO hay usuario Y no estamos autenticando, mostrar PinPad
+  if (!user) {
+    return <PinPad onSubmit={handlePinSubmit} disabled={isAuthenticating} />;
+  }
+
+  // Si hay usuario, mostrar TenantSelector
   return (
     <div className="min-h-screen flex items-center justify-center bg-black p-4">
       <TenantSelector
