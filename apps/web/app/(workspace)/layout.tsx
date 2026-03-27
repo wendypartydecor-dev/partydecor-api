@@ -1,14 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { Sidebar, WorkspaceProvider, useWorkspace } from '@aurea/ui';
 import { Loader2 } from 'lucide-react';
 
 function WorkspaceLayoutContent({ children }: { children: React.ReactNode }) {
-  const router = useRouter();
+  useRouter();
   const searchParams = useSearchParams();
-  const { tenantId, isDetailOpen, selectedEventId, setTenant, selectEvent } = useWorkspace();
+  const { tenantId, setTenant } = useWorkspace();
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
