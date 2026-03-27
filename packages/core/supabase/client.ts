@@ -103,6 +103,7 @@ export type Database = {
           empresa_nombre_corto: string;
           empresa_logo: string | null;
           empresa_color: string | null;
+          empresa_accent_color: string | null;
           rol: 'admin' | 'empleado' | 'solo_lectura';
           relacion_activa: boolean;
         };

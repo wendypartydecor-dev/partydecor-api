@@ -3,12 +3,12 @@
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { supabase, TenantFromDb } from '@aurea/core/supabase/client';
-import type { TenantSummary, TenantSelectorStatus } from '@aurea/ui/src/tenant-selector/tenant-selector.types';
+import type { TenantSummary } from '@aurea/ui/src/tenant-selector/tenant-selector.types';
 
 interface AuthContextType {
   user: { id: string; email: string; displayName: string; avatarInitials: string } | null;
   tenants: TenantSummary[];
-  tenantStatus: TenantSelectorStatus;
+  tenantStatus: 'loading' | 'ready' | 'selecting' | 'error';
   selectingTenantId: string | null;
   error: string | null;
   loginWithPin: (email: string, pin: string) => Promise<{ error: string | null }>;
@@ -25,7 +25,7 @@ function mapDbTenantToUi(row: TenantFromDb, lastUsedId: string | null): TenantSu
     nombre: row.empresa_nombre,
     iniciales: row.empresa_nombre_corto.substring(0, 2).toUpperCase(),
     logoUrl: row.empresa_logo,
-    accentColor: row.empresa_color ?? 'oklch(55% 0.08 260)',
+    accentColor: row.empresa_accent_color ?? row.empresa_color ?? 'oklch(0.55 0.08 260)',
     rolEmpresa: row.rol,
     isLastUsed: row.empresa_id === lastUsedId,
     meta: {
@@ -39,7 +39,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [user, setUser] = useState<AuthContextType['user']>(null);
   const [tenants, setTenants] = useState<TenantSummary[]>([]);
-  const [tenantStatus, setTenantStatus] = useState<TenantSelectorStatus>('loading');
+  const [tenantStatus, setTenantStatus] = useState<AuthContextType['tenantStatus']>('loading');
   const [selectingTenantId, setSelectingTenantId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -56,7 +56,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       .eq('usuario_id', userId);
 
     if (fetchError) {
-      console.error('Fetch tenants error:', fetchError);
       setError('Error al cargar empresas');
       setTenantStatus('error');
       return;
@@ -66,12 +65,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const mapped = data.map((row) => mapDbTenantToUi(row, lastUsedId));
       setTenants(mapped);
       localStorage.setItem('aurea_tenant_count', String(data.length));
+      
+      if (data.length === 1) {
+        localStorage.setItem('aurea_last_tenant_id', mapped[0].id);
+        router.push(`/eventos?tenant=${mapped[0].id}`);
+        return;
+      }
     } else {
       setTenants([]);
     }
     
     setTenantStatus('ready');
-  }, []);
+  }, [router]);
 
   const loadStoredSession = useCallback(async () => {
     const storedToken = localStorage.getItem('aurea_auth_token');
@@ -95,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         await fetchTenants(userData.id);
         return;
       } catch (e) {
-        console.error('Error loading stored session:', e);
+        // Silent fail - user needs to re-login
       }
     }
     
@@ -105,16 +110,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     loadStoredSession();
   }, [loadStoredSession]);
-
-  useEffect(() => {
-    console.log('--- AUTH STATE MONITOR ---');
-    console.log('User:', user);
-    console.log('Tenant Status:', tenantStatus);
-    console.log('Tenants count:', tenants.length);
-    console.log('Session Token:', localStorage.getItem('aurea_auth_token') ? 'Present' : 'Missing');
-    console.log('Error:', error);
-    console.log('--- END AUTH MONITOR ---');
-  }, [user, tenantStatus, tenants.length, error]);
 
   const loginWithPin = useCallback(async (email: string, pin: string) => {
     setError(null);
@@ -138,18 +133,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const { token, user: userData } = result;
 
-      console.log('=== SET SESSION DEBUG ===');
-      console.log('Token length:', token?.length);
-      console.log('Setting session with token...');
-      
-      const sessionResult = await supabase.auth.setSession({
+      await supabase.auth.setSession({
         access_token: token,
         refresh_token: '',
       });
-      
-      console.log('setSession result:', sessionResult);
-      console.log('setSession error:', sessionResult.error);
-      console.log('=== END SET SESSION ===');
 
       const displayName = userData.email.split('@')[0];
       const userForStore = {
@@ -167,7 +154,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       return { error: null };
     } catch (err) {
-      console.error('Login error:', err);
       const msg = 'Error de conexión';
       setError(msg);
       setTenantStatus('error');
