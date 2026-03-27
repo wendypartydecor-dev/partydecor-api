@@ -99,7 +99,7 @@ export function useAuthFlow() {
         return;
       }
 
-      const { token, user: userData } = result;
+      const { token, user: userData, tenant: tenantFromApi } = result;
 
       const displayName = userData.email.split('@')[0];
       const userForStore: UserInfo = {
@@ -114,17 +114,31 @@ export function useAuthFlow() {
 
       const lastUsedId = localStorage.getItem('aurea_last_tenant_id');
       const aureaClient = createAureaClient(token);
-      const { data, error: tenantsError } = await aureaClient
+
+      let tenants: TenantSummary[] = [];
+      
+      if (tenantFromApi) {
+        tenants = [{
+          id: tenantFromApi.id,
+          nombre: '',
+          iniciales: tenantFromApi.id.substring(0, 2).toUpperCase(),
+          logoUrl: null,
+          accentColor: 'oklch(0.55 0.08 260)',
+          rolEmpresa: tenantFromApi.rol as 'admin' | 'empleado' | 'solo_lectura',
+          isLastUsed: true,
+          meta: { lastAccessAt: null, upcomingEventCount: 0 },
+        }];
+      }
+
+      const { data } = await aureaClient
         .from('v_usuarios_empresas')
         .select('*')
         .eq('usuario_id', userData.id);
 
-      if (tenantsError) {
-        dispatch({ type: 'ERROR', error: 'Error al cargar empresas' });
-        return;
+      if (data && data.length > 0) {
+        tenants = data.map((row: Record<string, unknown>) => mapDbTenantToUi(row, lastUsedId));
       }
       
-      const tenants = data?.map((row: Record<string, unknown>) => mapDbTenantToUi(row, lastUsedId)) ?? [];
       localStorage.setItem('aurea_tenant_count', String(tenants.length));
       dispatch({ type: 'TENANTS_LOADED', user: userForStore, tenants });
     } catch {
