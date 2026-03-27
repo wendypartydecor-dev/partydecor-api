@@ -16,7 +16,7 @@ export type {
   TenantSelectorStatus,
 } from './src/tenant-selector/tenant-selector.types';
 
-export { WorkspaceProvider, useWorkspace } from './workspace/WorkspaceProvider';
+export { WorkspaceProvider, useWorkspace } from './src/workspace/WorkspaceProvider';
 export * from './src/workspace/workspace.types';
 export { Sidebar } from './src/workspace/Sidebar';
 export { EventCard, EventCardSkeleton } from './src/event-card/EventCard';
