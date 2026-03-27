@@ -3,17 +3,11 @@ import jwt from 'jsonwebtoken';
 import { supabase } from '@aurea/core/supabase/client';
 
 const JWT_SECRET = process.env.SUPABASE_JWT_SECRET;
-const TOKEN_EXPIRY = '24h';
+const TOKEN_EXPIRY_SECONDS = 24 * 60 * 60;
 
 export async function POST(request: NextRequest) {
   try {
     const { email, pin } = await request.json();
-
-    console.log('=== AUTH DEBUG ===');
-    console.log('Email received:', email);
-    console.log('JWT Secret Length:', process.env.SUPABASE_JWT_SECRET?.length || 0);
-    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
-    console.log('==================');
 
     if (!email || !pin) {
       return NextResponse.json(
@@ -28,7 +22,6 @@ export async function POST(request: NextRequest) {
     });
 
     if (rpcError) {
-      console.error('RPC Error:', rpcError);
       return NextResponse.json(
         { error: 'Error al autenticar' },
         { status: 500 }
@@ -45,7 +38,6 @@ export async function POST(request: NextRequest) {
     const userData = data[0] as { user_id: string; empresa_id: string; rol: string };
 
     if (!JWT_SECRET) {
-      console.error('JWT Secret missing: SUPABASE_JWT_SECRET environment variable is not set');
       return NextResponse.json(
         { error: 'Error de configuración del servidor' },
         { status: 500 }
@@ -53,7 +45,7 @@ export async function POST(request: NextRequest) {
     }
 
     const iat = Math.floor(Date.now() / 1000);
-    const exp = iat + (24 * 60 * 60);
+    const exp = iat + TOKEN_EXPIRY_SECONDS;
 
     const token = jwt.sign(
       {
@@ -67,7 +59,9 @@ export async function POST(request: NextRequest) {
       { algorithm: 'HS256' }
     );
 
-    return NextResponse.json({
+    const expiresAt = new Date(exp * 1000).toUTCString();
+
+    const response = NextResponse.json({
       token,
       user: {
         id: userData.user_id,
@@ -79,8 +73,17 @@ export async function POST(request: NextRequest) {
       },
       expiresAt: exp,
     });
+
+    response.cookies.set('aurea_token', token, {
+      httpOnly: false,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      expires: new Date(exp * 1000),
+      path: '/',
+    });
+
+    return response;
   } catch (error) {
-    console.error('Auth Error:', error);
     return NextResponse.json(
       { error: 'Error interno del servidor' },
       { status: 500 }

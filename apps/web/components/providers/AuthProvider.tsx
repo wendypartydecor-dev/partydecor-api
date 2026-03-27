@@ -2,7 +2,7 @@
 
 import { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { supabase, TenantFromDb } from '@aurea/core/supabase/client';
+import { createAureaClient, getAureaTokenFromCookies, setAureaCookie, clearAureaCookie } from '@aurea/core/supabase/aurea-client';
 import type { TenantSummary } from '@aurea/ui/src/tenant-selector/tenant-selector.types';
 
 interface AuthContextType {
@@ -18,6 +18,16 @@ interface AuthContextType {
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
+
+interface TenantFromDb {
+  empresa_id: string;
+  empresa_nombre: string;
+  empresa_nombre_corto: string;
+  empresa_logo: string | null;
+  empresa_color: string | null;
+  empresa_accent_color: string | null;
+  rol: 'admin' | 'empleado' | 'solo_lectura';
+}
 
 function mapDbTenantToUi(row: TenantFromDb, lastUsedId: string | null): TenantSummary {
   return {
@@ -43,14 +53,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [selectingTenantId, setSelectingTenantId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchTenants = useCallback(async (userId: string) => {
+  const fetchTenants = useCallback(async (userId: string, token: string) => {
     setTenantStatus('loading');
     
-    const lastUsedId = typeof window !== 'undefined'
-      ? localStorage.getItem('aurea_last_tenant_id')
-      : null;
+    const lastUsedId = localStorage.getItem('aurea_last_tenant_id');
+    const aureaClient = createAureaClient(token);
 
-    const { data, error: fetchError } = await supabase
+    const { data, error: fetchError } = await aureaClient
       .from('v_usuarios_empresas')
       .select('*')
       .eq('usuario_id', userId);
@@ -79,16 +88,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   const loadStoredSession = useCallback(async () => {
-    const storedToken = localStorage.getItem('aurea_auth_token');
+    const token = getAureaTokenFromCookies();
     const storedUser = localStorage.getItem('aurea_user');
 
-    if (storedToken && storedUser) {
+    if (token && storedUser) {
       try {
-        await supabase.auth.setSession({
-          access_token: storedToken,
-          refresh_token: '',
-        });
-        
         const userData = JSON.parse(storedUser);
         setUser({
           id: userData.id,
@@ -97,10 +101,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           avatarInitials: userData.email[0].toUpperCase(),
         });
         
-        await fetchTenants(userData.id);
+        await fetchTenants(userData.id, token);
         return;
       } catch (e) {
-        // Silent fail - user needs to re-login
+        clearAureaCookie();
       }
     }
     
@@ -133,17 +137,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const { token, user: userData } = result;
 
-      const { error: sessionError } = await supabase.auth.setSession({
-        access_token: token,
-        refresh_token: token,
-      });
-      
-      if (sessionError) {
-        setError('Error de sesión. Intenta de nuevo.');
-        setTenantStatus('error');
-        return { error: 'Error de sesión' };
-      }
-
       const displayName = userData.email.split('@')[0];
       const userForStore = {
         id: userData.id,
@@ -156,7 +149,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('aurea_user', JSON.stringify(userForStore));
 
       setUser(userForStore);
-      await fetchTenants(userData.id);
+      await fetchTenants(userData.id, token);
 
       return { error: null };
     } catch (err) {
@@ -170,10 +163,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const selectTenant = useCallback((tenant: TenantSummary) => {
     setSelectingTenantId(tenant.id);
     setTenantStatus('selecting');
-
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('aurea_last_tenant_id', tenant.id);
-    }
+    localStorage.setItem('aurea_last_tenant_id', tenant.id);
 
     setTimeout(() => {
       router.push(`/eventos?tenant=${tenant.id}`);
@@ -184,8 +174,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('aurea_auth_token');
     localStorage.removeItem('aurea_user');
     localStorage.removeItem('aurea_last_tenant_id');
-    
-    await supabase.auth.signOut();
+    clearAureaCookie();
     
     setUser(null);
     setTenants([]);
