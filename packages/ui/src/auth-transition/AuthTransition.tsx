@@ -3,7 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { SpinnerAurea } from './SpinnerAurea';
 import { StepIndicator } from './StepIndicator';
-import type { AuthTransitionProps, TRANSITION_MESSAGES } from './auth-transition.types';
+import type { AuthTransitionProps } from './auth-transition.types';
+import { TRANSITION_MESSAGES } from './auth-transition.types';
 
 export function AuthTransition({
   phase,
