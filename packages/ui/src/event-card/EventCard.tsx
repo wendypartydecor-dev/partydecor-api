@@ -1,13 +1,13 @@
 'use client';
 
-import { useWorkspace } from '@aurea/web/providers/WorkspaceProvider';
+import { useWorkspace } from '../workspace/WorkspaceProvider';
 import {
   STATUS_COLORS,
   resolveEventStatus,
   formatCurrency,
   formatDate,
   type EventoResumen,
-} from '@aurea/ui/src/workspace/workspace.types';
+} from '../workspace/workspace.types';
 import { MapPin, User } from 'lucide-react';
 
 interface EventCardProps {

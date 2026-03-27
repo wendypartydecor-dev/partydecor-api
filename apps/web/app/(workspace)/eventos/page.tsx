@@ -1,10 +1,9 @@
 'use client';
 
-import { Suspense, useState, useCallback, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useWorkspace } from '@aurea/web/components/providers/WorkspaceProvider';
+import { useWorkspace, EventCard, EventCardSkeleton } from '@aurea/ui';
 import { useEventos } from '@aurea/web/hooks/useEventos';
-import { EventCard, EventCardSkeleton } from '@aurea/ui/src/event-card/EventCard';
 import { CommandPalette } from '@aurea/ui/src/command-palette/CommandPalette';
 import { Plus, Calendar, Search, Command } from 'lucide-react';
 

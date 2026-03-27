@@ -1,7 +1,15 @@
 'use client';
 
 import { createContext, useContext, useState, useCallback, type ReactNode } from 'react';
-import type { WorkspaceState } from '@aurea/ui/src/workspace/workspace.types';
+
+export interface WorkspaceState {
+  tenantId: string | null;
+  tenantName: string;
+  accentColor: string;
+  selectedEventId: string | null;
+  isSidebarCollapsed: boolean;
+  isDetailOpen: boolean;
+}
 
 interface WorkspaceContextType extends WorkspaceState {
   setTenant: (id: string, name: string, accentColor: string) => void;

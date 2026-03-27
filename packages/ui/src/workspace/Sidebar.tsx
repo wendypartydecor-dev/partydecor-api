@@ -1,6 +1,6 @@
 'use client';
 
-import { useWorkspace } from '@aurea/web/providers/WorkspaceProvider';
+import { useWorkspace } from './WorkspaceProvider';
 import { Building2, Calendar, Users, Package, FileText, ChevronLeft, ChevronRight, Sparkles, Settings } from 'lucide-react';
 
 const NAV_ITEMS = [

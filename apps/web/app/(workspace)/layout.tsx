@@ -1,10 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { Sidebar } from '@aurea/ui/src/workspace/Sidebar';
-import { WorkspaceProvider, useWorkspace } from '@aurea/web/components/providers/WorkspaceProvider';
-import { getAureaTokenFromCookies } from '@aurea/core/supabase/aurea-client';
+import { useSearchParams } from 'next/navigation';
+import { Sidebar, WorkspaceProvider, useWorkspace } from '@aurea/ui';
 import { Loader2 } from 'lucide-react';
 
 function WorkspaceLayoutContent({ children }: { children: React.ReactNode }) {

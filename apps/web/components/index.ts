@@ -1,3 +1,3 @@
-export { WorkspaceProvider, useWorkspace } from './providers/WorkspaceProvider';
-export { Sidebar } from '@aurea/ui/src/workspace/Sidebar';
-export * from '@aurea/ui/src/workspace/workspace.types';
+export { WorkspaceProvider, useWorkspace } from '@aurea/ui';
+export { Sidebar } from '@aurea/ui';
+export * from '@aurea/ui';
