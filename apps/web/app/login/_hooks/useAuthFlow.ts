@@ -1,7 +1,6 @@
 'use client';
 
-import { useReducer, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useReducer, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@aurea/core/supabase/client';
 import type { TenantSummary } from '@aurea/ui/src/tenant-selector/tenant-selector.types';
 
@@ -13,19 +12,20 @@ interface UserInfo {
 }
 
 interface AuthFlowState {
-  step: 'login' | 'verifying' | 'loading_tenants' | 'tenant_select';
+  step: 'login' | 'verifying' | 'loading_tenants' | 'ready' | 'tenant_select';
   user: UserInfo | null;
   tenants: TenantSummary[];
   error: string | null;
+  autoRedirectTenantId: string | null;
 }
 
 type AuthFlowAction =
   | { type: 'LOGIN_START' }
   | { type: 'TENANTS_LOADED'; user: UserInfo; tenants: TenantSummary[] }
+  | { type: 'SET_READY' }
   | { type: 'TRANSITION_COMPLETE' }
   | { type: 'ERROR'; error: string }
-  | { type: 'LOGOUT' }
-  | { type: 'SELECT_TENANT'; tenant: TenantSummary };
+  | { type: 'LOGOUT' };
 
 function mapDbTenantToUi(row: Record<string, unknown>, lastUsedId: string | null): TenantSummary {
   return {
@@ -48,30 +48,39 @@ function authFlowReducer(state: AuthFlowState, action: AuthFlowAction): AuthFlow
     case 'LOGIN_START':
       return { ...state, step: 'verifying', error: null };
     case 'TENANTS_LOADED':
-      return { ...state, step: 'loading_tenants', user: action.user, tenants: action.tenants };
+      return { 
+        ...state, 
+        step: 'loading_tenants', 
+        user: action.user, 
+        tenants: action.tenants,
+        autoRedirectTenantId: action.tenants.length === 1 ? action.tenants[0].id : null,
+      };
+    case 'SET_READY':
+      return { ...state, step: 'ready' };
     case 'TRANSITION_COMPLETE':
       return { ...state, step: 'tenant_select' };
     case 'ERROR':
       return { ...state, step: 'login', error: action.error };
     case 'LOGOUT':
-      return { step: 'login', user: null, tenants: [], error: null };
-    case 'SELECT_TENANT':
-      return state;
+      return { step: 'login', user: null, tenants: [], error: null, autoRedirectTenantId: null };
     default:
       return state;
   }
 }
 
 export function useAuthFlow() {
-  const router = useRouter();
   const [state, dispatch] = useReducer(authFlowReducer, {
     step: 'login',
     user: null,
     tenants: [],
     error: null,
+    autoRedirectTenantId: null,
   });
 
+  const hasAutoRedirected = useRef(false);
+
   const handlePinComplete = useCallback(async (email: string, pin: string) => {
+    hasAutoRedirected.current = false;
     dispatch({ type: 'LOGIN_START' });
 
     try {
@@ -115,13 +124,6 @@ export function useAuthFlow() {
       if (data && data.length > 0) {
         const tenants = data.map((row: Record<string, unknown>) => mapDbTenantToUi(row, lastUsedId));
         localStorage.setItem('aurea_tenant_count', String(data.length));
-
-        if (data.length === 1) {
-          localStorage.setItem('aurea_last_tenant_id', tenants[0].id);
-          router.push(`/eventos?tenant=${tenants[0].id}`);
-          return;
-        }
-
         dispatch({ type: 'TENANTS_LOADED', user: userForStore, tenants });
       } else {
         dispatch({ type: 'TENANTS_LOADED', user: userForStore, tenants: [] });
@@ -129,7 +131,18 @@ export function useAuthFlow() {
     } catch {
       dispatch({ type: 'ERROR', error: 'Error de conexión' });
     }
-  }, [router]);
+  }, []);
+
+  useEffect(() => {
+    if (state.step === 'loading_tenants' && state.autoRedirectTenantId && !hasAutoRedirected.current) {
+      hasAutoRedirected.current = true;
+      localStorage.setItem('aurea_last_tenant_id', state.autoRedirectTenantId);
+      const timer = setTimeout(() => {
+        dispatch({ type: 'SET_READY' });
+      }, 500);
+      return () => clearTimeout(timer);
+    }
+  }, [state.step, state.autoRedirectTenantId]);
 
   const handleTenantSelect = useCallback((tenant: TenantSummary) => {
     localStorage.setItem('aurea_last_tenant_id', tenant.id);

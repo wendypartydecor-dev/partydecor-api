@@ -1,12 +1,21 @@
 'use client';
 
+import { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { AuthTransition } from '@aurea/ui/src/auth-transition/AuthTransition';
 import { TenantSelector } from '@aurea/ui/src/tenant-selector/TenantSelector';
 import { useAuthFlow } from '../_hooks/useAuthFlow';
 import { LoginCard } from './LoginCard';
 
 export function LoginScreen() {
+  const router = useRouter();
   const { state, handlePinComplete, handleTenantSelect, handleLogout, dispatch } = useAuthFlow();
+
+  useEffect(() => {
+    if (state.step === 'ready' && state.autoRedirectTenantId) {
+      router.push(`/eventos?tenant=${state.autoRedirectTenantId}`);
+    }
+  }, [state.step, state.autoRedirectTenantId, router]);
 
   if (state.step === 'login') {
     return <LoginCard onPinComplete={handlePinComplete} error={state.error} />;
@@ -29,7 +38,13 @@ export function LoginScreen() {
             phase={state.step}
             userDisplayName={state.user?.displayName}
             userAvatarInitials={state.user?.avatarInitials}
-            onReadyToMount={() => dispatch({ type: 'TRANSITION_COMPLETE' })}
+            onReadyToMount={() => {
+              if (state.autoRedirectTenantId) {
+                dispatch({ type: 'SET_READY' });
+              } else {
+                dispatch({ type: 'TRANSITION_COMPLETE' });
+              }
+            }}
           />
         </div>
       </div>
