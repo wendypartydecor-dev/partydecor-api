@@ -10,7 +10,7 @@ if (!supabaseUrl || !supabaseAnonKey) {
 }
 
 export function createAureaClient(token: string): SupabaseClient {
-  return createClient(supabaseUrl, supabaseAnonKey, {
+  return createClient(supabaseUrl!, supabaseAnonKey!, {
     global: {
       headers: {
         Authorization: `Bearer ${token}`,
