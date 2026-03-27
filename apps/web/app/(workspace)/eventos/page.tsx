@@ -9,10 +9,18 @@ import { Plus, Calendar, Search, Command } from 'lucide-react';
 function EventosContent() {
   const searchParams = useSearchParams();
   const tenantId = searchParams?.get('tenant') || '';
-  const { selectEvent, selectedEventId } = useWorkspace();
+  const { setTenant, selectEvent, selectedEventId } = useWorkspace();
   const { eventos, isLoading } = useEventos({ tenantId, enabled: !!tenantId });
   const [isCommandPaletteOpen, setIsCommandPaletteOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [tenantInitialized, setTenantInitialized] = useState(false);
+
+  useEffect(() => {
+    if (tenantId && !tenantInitialized) {
+      setTenant(tenantId, 'Empresa', 'oklch(78% 0.12 75)');
+      setTenantInitialized(true);
+    }
+  }, [tenantId, setTenant, tenantInitialized]);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
