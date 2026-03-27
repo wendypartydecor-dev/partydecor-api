@@ -17,4 +17,4 @@ export type {
 } from './src/tenant-selector/tenant-selector.types';
 
 export { WorkspaceProvider, useWorkspace } from './workspace/WorkspaceProvider';
-export * from './workspace/workspace.types';
+export * from './src/workspace/workspace.types';
