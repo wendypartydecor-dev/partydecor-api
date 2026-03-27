@@ -133,10 +133,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       const { token, user: userData } = result;
 
-      await supabase.auth.setSession({
+      const { error: sessionError } = await supabase.auth.setSession({
         access_token: token,
-        refresh_token: '',
+        refresh_token: token,
       });
+      
+      if (sessionError) {
+        setError('Error de sesión. Intenta de nuevo.');
+        setTenantStatus('error');
+        return { error: 'Error de sesión' };
+      }
 
       const displayName = userData.email.split('@')[0];
       const userForStore = {

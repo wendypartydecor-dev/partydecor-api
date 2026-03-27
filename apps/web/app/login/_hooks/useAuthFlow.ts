@@ -102,19 +102,17 @@ export function useAuthFlow() {
       const { token, user: userData } = result;
 
       console.log('[ZONA-1] Attempting supabase.auth.setSession...');
-      try {
-        const { error: sessionError } = await supabase.auth.setSession({
-          access_token: token,
-          refresh_token: '',
-        });
-        if (sessionError) {
-          console.error('[ZONA-1] setSession error:', sessionError.message);
-        } else {
-          console.log('[ZONA-1] setSession SUCCESS');
-        }
-      } catch (e) {
-        console.error('[ZONA-1] setSession EXCEPTION:', e);
+      const { error: sessionError } = await supabase.auth.setSession({
+        access_token: token,
+        refresh_token: token,
+      });
+      
+      if (sessionError) {
+        console.error('[ZONA-1] setSession error:', sessionError.message);
+        dispatch({ type: 'ERROR', error: 'Error de sesión. Intenta de nuevo.' });
+        return;
       }
+      console.log('[ZONA-1] setSession SUCCESS');
 
       const displayName = userData.email.split('@')[0];
       const userForStore: UserInfo = {
@@ -128,18 +126,19 @@ export function useAuthFlow() {
       localStorage.setItem('aurea_user', JSON.stringify(userForStore));
 
       const lastUsedId = localStorage.getItem('aurea_last_tenant_id');
-      const { data } = await supabase
+      console.log('[ZONA-1] Fetching tenants for user:', userData.id);
+      const { data, error: tenantsError } = await supabase
         .from('v_usuarios_empresas')
         .select('*')
         .eq('usuario_id', userData.id);
 
-      if (data && data.length > 0) {
-        const tenants = data.map((row: Record<string, unknown>) => mapDbTenantToUi(row, lastUsedId));
-        localStorage.setItem('aurea_tenant_count', String(data.length));
-        dispatch({ type: 'TENANTS_LOADED', user: userForStore, tenants });
-      } else {
-        dispatch({ type: 'TENANTS_LOADED', user: userForStore, tenants: [] });
-      }
+      console.log('[ZONA-1] Tenants query result - data:', data?.length, 'error:', tenantsError?.message);
+      
+      const tenants = data?.map((row: Record<string, unknown>) => mapDbTenantToUi(row, lastUsedId)) ?? [];
+      console.log('[ZONA-1] Mapped tenants:', tenants.map(t => t.id));
+      
+      localStorage.setItem('aurea_tenant_count', String(tenants.length));
+      dispatch({ type: 'TENANTS_LOADED', user: userForStore, tenants });
     } catch {
       dispatch({ type: 'ERROR', error: 'Error de conexión' });
     }
