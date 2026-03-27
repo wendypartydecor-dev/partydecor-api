@@ -18,3 +18,6 @@ export type {
 
 export { WorkspaceProvider, useWorkspace } from './workspace/WorkspaceProvider';
 export * from './src/workspace/workspace.types';
+export { Sidebar } from './src/workspace/Sidebar';
+export { EventCard, EventCardSkeleton } from './src/event-card/EventCard';
+export { CommandPalette } from './src/command-palette/CommandPalette';

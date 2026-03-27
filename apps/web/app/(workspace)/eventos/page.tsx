@@ -2,9 +2,8 @@
 
 import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { useWorkspace, EventCard, EventCardSkeleton } from '@aurea/ui';
+import { useWorkspace, EventCard, EventCardSkeleton, CommandPalette } from '@aurea/ui';
 import { useEventos } from '@aurea/web/hooks/useEventos';
-import { CommandPalette } from '@aurea/ui/src/command-palette/CommandPalette';
 import { Plus, Calendar, Search, Command } from 'lucide-react';
 
 function EventosContent() {
