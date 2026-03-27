@@ -1,6 +1,7 @@
 'use client';
 
 import { useReducer, useCallback, useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 import { supabase } from '@aurea/core/supabase/client';
 import type { TenantSummary } from '@aurea/ui/src/tenant-selector/tenant-selector.types';
 
@@ -69,6 +70,7 @@ function authFlowReducer(state: AuthFlowState, action: AuthFlowAction): AuthFlow
 }
 
 export function useAuthFlow() {
+  const router = useRouter();
   const [state, dispatch] = useReducer(authFlowReducer, {
     step: 'login',
     user: null,
@@ -99,10 +101,20 @@ export function useAuthFlow() {
 
       const { token, user: userData } = result;
 
-      await supabase.auth.setSession({
-        access_token: token,
-        refresh_token: '',
-      });
+      console.log('[ZONA-1] Attempting supabase.auth.setSession...');
+      try {
+        const { error: sessionError } = await supabase.auth.setSession({
+          access_token: token,
+          refresh_token: '',
+        });
+        if (sessionError) {
+          console.error('[ZONA-1] setSession error:', sessionError.message);
+        } else {
+          console.log('[ZONA-1] setSession SUCCESS');
+        }
+      } catch (e) {
+        console.error('[ZONA-1] setSession EXCEPTION:', e);
+      }
 
       const displayName = userData.email.split('@')[0];
       const userForStore: UserInfo = {
@@ -134,10 +146,13 @@ export function useAuthFlow() {
   }, []);
 
   useEffect(() => {
+    console.log('[ZONA-2] useEffect triggered - step:', state.step, 'autoRedirectTenantId:', state.autoRedirectTenantId, 'hasAutoRedirected:', hasAutoRedirected.current);
     if (state.step === 'loading_tenants' && state.autoRedirectTenantId && !hasAutoRedirected.current) {
+      console.log('[ZONA-2] Starting 500ms delay for SET_READY...');
       hasAutoRedirected.current = true;
       localStorage.setItem('aurea_last_tenant_id', state.autoRedirectTenantId);
       const timer = setTimeout(() => {
+        console.log('[ZONA-2] Dispatching SET_READY');
         dispatch({ type: 'SET_READY' });
       }, 500);
       return () => clearTimeout(timer);

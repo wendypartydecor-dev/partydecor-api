@@ -12,7 +12,9 @@ export function LoginScreen() {
   const { state, handlePinComplete, handleTenantSelect, handleLogout, dispatch } = useAuthFlow();
 
   useEffect(() => {
+    console.log('[ZONA-3] LoginScreen useEffect - step:', state.step, 'autoRedirectTenantId:', state.autoRedirectTenantId);
     if (state.step === 'ready' && state.autoRedirectTenantId) {
+      console.log('[ZONA-3] Attempting router.push to /eventos?tenant=', state.autoRedirectTenantId);
       router.push(`/eventos?tenant=${state.autoRedirectTenantId}`);
     }
   }, [state.step, state.autoRedirectTenantId, router]);

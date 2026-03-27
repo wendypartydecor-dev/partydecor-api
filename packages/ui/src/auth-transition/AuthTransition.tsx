@@ -23,12 +23,17 @@ export function AuthTransition({
     : TRANSITION_MESSAGES.loading_tenants;
 
   useEffect(() => {
+    console.log('[AUTH_TRANSITION] phase changed to:', phase);
     if (phase === 'ready') {
+      console.log('[AUTH_TRANSITION] Starting exit animation, will call onReadyToMount in 280ms...');
       setIsExiting(true);
       const timeout = setTimeout(() => {
         if (onReadyToMount && !hasCalledOnReady.current) {
+          console.log('[AUTH_TRANSITION] Calling onReadyToMount()');
           hasCalledOnReady.current = true;
           onReadyToMount();
+        } else {
+          console.log('[AUTH_TRANSITION] onReadyToMount already called or not provided');
         }
       }, 280);
       return () => clearTimeout(timeout);
