@@ -28,3 +28,5 @@ export { FloatingSummary } from './src/quote/FloatingSummary';
 export { QuoteItemRow } from './src/quote/QuoteItemRow';
 export { CatalogSearch } from './src/quote/CatalogSearch';
 export * from './src/quote/quote.types';
+
+export { formatCurrency, formatDate, roundCurrency } from './src/utils/currency';

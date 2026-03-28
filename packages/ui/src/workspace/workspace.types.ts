@@ -1,13 +1,7 @@
-export const STATUS_COLORS = {
-  urgent: 'oklch(60% 0.20 25)',
-  overdue: 'oklch(62% 0.18 30)',
-  pending: 'oklch(72% 0.14 72)',
-  upcoming: 'oklch(68% 0.10 280)',
-  confirmed: 'oklch(55% 0.15 175)',
-  past: 'oklch(70% 0.02 260)',
-} as const;
+import type { EventStatus } from '../utils/currency.types';
 
-export type EventStatus = keyof typeof STATUS_COLORS;
+export { STATUS_COLORS, resolveEventStatus } from '../utils/currency';
+export { formatCurrency, formatDate, roundCurrency } from '../utils/currency';
 
 export interface EventoResumen {
   id: string;
@@ -37,6 +31,17 @@ export interface WorkspaceState {
   isDetailOpen: boolean;
 }
 
+export const STATUS_COLORS = {
+  urgent: 'oklch(60% 0.20 25)',
+  overdue: 'oklch(62% 0.18 30)',
+  pending: 'oklch(72% 0.14 72)',
+  upcoming: 'oklch(68% 0.10 280)',
+  confirmed: 'oklch(55% 0.15 175)',
+  past: 'oklch(70% 0.02 260)',
+} as const;
+
+export type { EventStatus };
+
 export function resolveEventStatus(evento: EventoResumen): EventStatus {
   const today = new Date();
   const eventDate = new Date(evento.fecha_evento);
@@ -49,20 +54,4 @@ export function resolveEventStatus(evento: EventoResumen): EventStatus {
   if (diffDays <= 7) return 'upcoming';
   if (evento.estado === 'confirmado') return 'confirmed';
   return 'confirmed';
-}
-
-export function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency: 'MXN',
-  }).format(amount);
-}
-
-export function formatDate(dateString: string): string {
-  const date = new Date(dateString);
-  return date.toLocaleDateString('es-MX', {
-    day: 'numeric',
-    month: 'short',
-    year: 'numeric',
-  });
 }

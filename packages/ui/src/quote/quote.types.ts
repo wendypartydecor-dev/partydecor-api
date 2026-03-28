@@ -1,3 +1,5 @@
+export { roundCurrency, formatCurrency } from '../utils/currency';
+
 export interface QuoteItem {
   id: string;
   cotizacion_id: string | null;
@@ -52,10 +54,6 @@ export interface CatalogItem {
   icono: string;
 }
 
-export function roundCurrency(amount: number): number {
-  return Math.round(amount * 100) / 100;
-}
-
 export function calculateLineaTotal(item: QuoteItem): {
   precioUnitarioEfectivo: number;
   lineaTotalOriginal: number;
@@ -76,7 +74,7 @@ export function calculateQuoteTotals(items: QuoteItem[], impuestos: TaxConfig[])
   let total_descuentos = 0;
   
   for (const item of items) {
-    const { lineaTotalOriginal, lineaTotalEfectiva, descuentoMonto } = calculateLineaTotal(item);
+    const { lineaTotalOriginal, descuentoMonto } = calculateLineaTotal(item);
     subtotal_bruto += lineaTotalOriginal;
     total_descuentos += descuentoMonto;
   }
@@ -123,11 +121,4 @@ export function createQuoteItemSnapshot(catalogItem: CatalogItem): QuoteItem {
     notas: '',
     sort_order: 0,
   };
-}
-
-export function formatCurrency(amount: number, currency: 'MXN' | 'USD' = 'MXN'): string {
-  return new Intl.NumberFormat('es-MX', {
-    style: 'currency',
-    currency,
-  }).format(amount);
 }
