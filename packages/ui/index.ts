@@ -21,3 +21,10 @@ export * from './src/workspace/workspace.types';
 export { Sidebar } from './src/workspace/Sidebar';
 export { EventCard, EventCardSkeleton } from './src/event-card/EventCard';
 export { CommandPalette } from './src/command-palette/CommandPalette';
+
+export { QuoteProvider, useQuote } from './src/quote/QuoteProvider';
+export { SmartQuoteSidebar } from './src/quote/SmartQuoteSidebar';
+export { FloatingSummary } from './src/quote/FloatingSummary';
+export { QuoteItemRow } from './src/quote/QuoteItemRow';
+export { CatalogSearch } from './src/quote/CatalogSearch';
+export * from './src/quote/quote.types';
