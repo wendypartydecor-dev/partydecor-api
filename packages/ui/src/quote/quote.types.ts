@@ -1,4 +1,6 @@
-export { roundCurrency, formatCurrency } from '../utils/currency';
+import { roundCurrency, formatCurrency } from '../utils/currency';
+
+export { roundCurrency, formatCurrency };
 
 export interface QuoteItem {
   id: string;
