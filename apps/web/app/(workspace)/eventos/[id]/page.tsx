@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useWorkspace } from '@/components/providers/WorkspaceProvider';
+import { useWorkspace } from '@aurea/ui';
 
 export default function EventDetailPage() {
   const params = useParams();
