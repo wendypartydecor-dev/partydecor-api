@@ -26,44 +26,55 @@ export async function GET(request: NextRequest) {
     });
 
     const { data, error } = await supabase
-      .from('v_eventos_completo')
-      .select('*')
-      .eq('id_tenant', tenantId)
-      .order('fecha_evento', { ascending: true });
+      .from('eventos')
+      .select(`
+        id,
+        nombre_evento,
+        fecha_inicio,
+        estado,
+        monto_total,
+        anticipo,
+        saldo_pendiente,
+        lugar,
+        capacidad,
+        id_tenant:tenant_id
+      `)
+      .eq('tenant_id', tenantId)
+      .order('fecha_inicio', { ascending: true });
 
     if (error) {
-      console.error('Supabase error fetching eventos:', error.message, error.details);
+      console.error('Supabase error:', JSON.stringify(error));
       return NextResponse.json({ 
-        error: 'Error al cargar eventos',
-        details: error.message 
+        error: 'Error de base de datos',
+        details: error.message,
+        hint: error.hint
       }, { status: 500 });
     }
 
     const eventos = (data || []).map((row: Record<string, unknown>) => ({
       id: row.id as string,
-      nombre_evento: (row.nombre_evento || row.nombre) as string,
-      fecha_evento: row.fecha_evento as string,
+      nombre_evento: (row.nombre_evento || 'Sin nombre') as string,
+      fecha_evento: (row.fecha_inicio || new Date().toISOString()) as string,
       estado: (row.estado || 'prospecto') as 'prospecto' | 'cotizado' | 'confirmado' | 'montaje' | 'finalizado',
       cliente: {
-        id: (row.cliente_id || row.id_cli) as string || '',
-        nombre: (row.cliente_nombre || '') as string,
-        telefono: (row.cliente_telefono || row.telefono) as string | undefined,
+        id: '',
+        nombre: '',
       },
-      monto_total: Number(row.monto_total || row.total_cotizaciones || 0),
+      monto_total: Number(row.monto_total || 0),
       anticipo: Number(row.anticipo || 0),
       saldo_pendiente: Number(row.saldo_pendiente || 0),
       lugar: row.lugar as string | undefined,
       capacidad: row.capacidad as number | undefined,
-      tags: (row.tags as string[]) || [],
-      id_tenant: row.id_tenant as string,
+      tags: [],
+      id_tenant: (row.id_tenant || tenantId) as string,
     }));
 
     return NextResponse.json({ eventos });
   } catch (err) {
-    console.error('Unhandled error in API eventos:', err);
+    console.error('Unhandled error:', err);
     return NextResponse.json({ 
-      error: 'Error interno del servidor',
-      details: err instanceof Error ? err.message : 'Unknown error'
+      error: 'Error interno',
+      details: err instanceof Error ? err.message : 'Unknown'
     }, { status: 500 });
   }
 }
