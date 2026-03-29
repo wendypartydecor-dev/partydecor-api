@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { useWorkspace } from '@aurea/ui';
+import { useWorkspace } from '@/components/providers/WorkspaceProvider';
 
 export default function EventDetailPage() {
   const params = useParams();
@@ -21,7 +21,8 @@ export default function EventDetailPage() {
   }, [eventId, selectEvent, setTenant]);
 
   useEffect(() => {
-    router.replace(`/eventos?tenant=${new URLSearchParams(window.location.search).get('tenant') || ''}`);
+    const tenant = new URLSearchParams(window.location.search).get('tenant') || '';
+    router.replace(`/eventos?tenant=${tenant}`);
   }, [router]);
 
   return null;

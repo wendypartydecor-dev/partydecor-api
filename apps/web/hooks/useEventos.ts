@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getAureaTokenFromCookies } from '@aurea/core/supabase/aurea-client';
-import type { EventoResumen } from '@aurea/ui/src/workspace/workspace.types';
+import type { EventoResumen } from '@aurea/ui';
 
 interface UseEventosOptions {
   tenantId: string;
@@ -18,41 +18,52 @@ interface UseEventosResult {
 
 export function useEventos({ tenantId, enabled = true }: UseEventosOptions): UseEventosResult {
   const [eventos, setEventos] = useState<EventoResumen[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const isFetchingRef = useRef(false);
 
   const fetchEventos = useCallback(async () => {
+    if (isFetchingRef.current) return;
+    
     const token = getAureaTokenFromCookies();
-    if (!token || !enabled) {
+    if (!token || !tenantId || !enabled) {
       setIsLoading(false);
+      setEventos([]);
       return;
     }
 
+    isFetchingRef.current = true;
     setIsLoading(true);
     setError(null);
 
     try {
-      const response = await fetch(`/api/eventos?tenant=${tenantId}`, {
+      const response = await fetch(`/api/eventos?tenant=${encodeURIComponent(tenantId)}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
       });
 
       if (!response.ok) {
-        throw new Error('Error al cargar eventos');
+        const errorData = await response.json().catch(() => ({ error: 'Error desconhecido' }));
+        throw new Error(errorData.error || `HTTP ${response.status}`);
       }
 
       const data = await response.json();
       setEventos(data.eventos || []);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error desconocido');
+      const message = err instanceof Error ? err.message : 'Error desconhecido';
+      console.error('useEventos error:', message);
+      setError(message);
+      setEventos([]);
     } finally {
       setIsLoading(false);
+      isFetchingRef.current = false;
     }
   }, [tenantId, enabled]);
 
   useEffect(() => {
-    fetchEventos();
+    const timeoutId = setTimeout(fetchEventos, 100);
+    return () => clearTimeout(timeoutId);
   }, [fetchEventos]);
 
   return {
