@@ -29,9 +29,9 @@ export async function GET(request: NextRequest) {
 
     const { data, error } = await supabase
       .from('eventos')
-      .select('*')
-      .eq('tenant_id', tenantId)
-      .order('fecha_inicio', { ascending: true });
+      .select('id, id_empresa, f_ev, estado, saldo, id_cliente, lugar, capacidad')
+      .eq('id_empresa', tenantId)
+      .order('f_ev', { ascending: true });
 
     console.log('[API eventos] Raw response:', { dataCount: data?.length, error });
 
@@ -46,20 +46,20 @@ export async function GET(request: NextRequest) {
 
     const eventos = (data || []).map((row: Record<string, unknown>) => ({
       id: row.id as string,
-      nombre_evento: (row.nombre_evento || 'Sin nombre') as string,
-      fecha_evento: (row.fecha_inicio || new Date().toISOString()) as string,
+      nombre_evento: 'Evento' as string,
+      fecha_evento: (row.f_ev || new Date().toISOString()) as string,
       estado: (row.estado || 'prospecto') as 'prospecto' | 'cotizado' | 'confirmado' | 'montaje' | 'finalizado',
       cliente: {
-        id: '',
+        id: (row.id_cliente || '') as string,
         nombre: '',
       },
-      monto_total: Number(row.monto_total || 0),
-      anticipo: Number(row.anticipo || 0),
-      saldo_pendiente: Number(row.saldo_pendiente || 0),
+      monto_total: 0,
+      anticipo: 0,
+      saldo_pendiente: Number(row.saldo || 0),
       lugar: row.lugar as string | undefined,
       capacidad: row.capacidad as number | undefined,
       tags: [],
-      id_tenant: (row.tenant_id || tenantId) as string,
+      id_tenant: (row.id_empresa || tenantId) as string,
     }));
 
     console.log('[API eventos] Mapped eventos:', eventos.length);
