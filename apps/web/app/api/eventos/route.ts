@@ -25,29 +25,22 @@ export async function GET(request: NextRequest) {
       },
     });
 
+    console.log('[API eventos] Fetching for tenant:', tenantId);
+
     const { data, error } = await supabase
       .from('eventos')
-      .select(`
-        id,
-        nombre_evento,
-        fecha_inicio,
-        estado,
-        monto_total,
-        anticipo,
-        saldo_pendiente,
-        lugar,
-        capacidad,
-        id_tenant:tenant_id
-      `)
+      .select('*')
       .eq('tenant_id', tenantId)
       .order('fecha_inicio', { ascending: true });
 
+    console.log('[API eventos] Raw response:', { dataCount: data?.length, error });
+
     if (error) {
-      console.error('Supabase error:', JSON.stringify(error));
+      console.error('[API eventos] Supabase error:', error);
       return NextResponse.json({ 
         error: 'Error de base de datos',
         details: error.message,
-        hint: error.hint
+        hint: error.hint || null
       }, { status: 500 });
     }
 
@@ -66,12 +59,14 @@ export async function GET(request: NextRequest) {
       lugar: row.lugar as string | undefined,
       capacidad: row.capacidad as number | undefined,
       tags: [],
-      id_tenant: (row.id_tenant || tenantId) as string,
+      id_tenant: (row.tenant_id || tenantId) as string,
     }));
+
+    console.log('[API eventos] Mapped eventos:', eventos.length);
 
     return NextResponse.json({ eventos });
   } catch (err) {
-    console.error('Unhandled error:', err);
+    console.error('[API eventos] Unhandled error:', err);
     return NextResponse.json({ 
       error: 'Error interno',
       details: err instanceof Error ? err.message : 'Unknown'
