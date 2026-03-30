@@ -15,7 +15,9 @@ export function LoginScreen() {
     console.log('[ZONA-3] LoginScreen useEffect - step:', state.step, 'autoRedirectTenantId:', state.autoRedirectTenantId);
     if (state.step === 'ready' && state.autoRedirectTenantId) {
       console.log('[ZONA-3] Attempting router.push to /eventos?tenant=', state.autoRedirectTenantId);
-      router.push(`/eventos?tenant=${state.autoRedirectTenantId}`);
+      const cleanTenantId = state.autoRedirectTenantId.trim();
+      console.log('[ZONA-3] Clean tenant ID:', cleanTenantId);
+      router.push(`/eventos?tenant=${cleanTenantId}`);
     }
   }, [state.step, state.autoRedirectTenantId, router]);
 
