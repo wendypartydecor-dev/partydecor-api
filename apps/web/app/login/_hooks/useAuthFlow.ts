@@ -30,7 +30,7 @@ type AuthFlowAction =
 
 function mapDbTenantToUi(row: Record<string, unknown>, lastUsedId: string | null): TenantSummary {
   return {
-    id: row.empresa_id as string,
+    id: (row.empresa_id as string).trim(),
     nombre: row.empresa_nombre as string,
     iniciales: ((row.empresa_nombre_corto as string) || '').substring(0, 2).toUpperCase(),
     logoUrl: row.empresa_logo as string | null,
