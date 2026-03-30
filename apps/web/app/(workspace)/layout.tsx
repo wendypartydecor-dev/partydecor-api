@@ -16,7 +16,7 @@ function WorkspaceLayoutContent({ children }: { children: React.ReactNode }) {
       </main>
 
       {isDetailOpen && selectedEventId && (
-        <QuoteProvider>
+        <QuoteProvider initialQuote={{ evento_id: selectedEventId }}>
           <SmartQuoteSidebar
             cotizacionId={null}
             eventoId={selectedEventId}
