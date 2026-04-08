@@ -54,6 +54,7 @@ export async function POST(request: NextRequest) {
         iat,
         exp,
         email: email.toLowerCase(),
+        tenant_id: userData.empresa_id,
       },
       JWT_SECRET,
       { algorithm: 'HS256' }

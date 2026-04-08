@@ -36,6 +36,10 @@ export function useEventos({ tenantId, enabled = true }: UseEventosOptions): Use
     setIsLoading(true);
     setError(null);
 
+    console.log('[useEventos] Fetching with tenant:', tenantId);
+    console.log('[useEventos] Token exists:', !!token);
+    console.log('[useEventos] Token prefix:', token ? token.substring(0, 20) + '...' : 'null');
+
     try {
       const response = await fetch(`/api/eventos?tenant=${encodeURIComponent(tenantId)}`, {
         headers: {

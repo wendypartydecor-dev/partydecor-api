@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+import jwt from 'jsonwebtoken';
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -26,6 +27,14 @@ export async function GET(request: NextRequest) {
     });
 
     console.log('[API eventos] Fetching for tenant:', tenantId);
+
+    try {
+      const decoded = jwt.decode(authHeader.replace('Bearer ', '')) as { tenant_id?: string } | null;
+      console.log('[API eventos] JWT Claims:', decoded);
+      console.log('[API eventos] tenant_id from JWT:', decoded?.tenant_id);
+    } catch (e) {
+      console.log('[API eventos] Could not decode JWT:', e);
+    }
 
     const { data, error } = await supabase
       .from('eventos')
