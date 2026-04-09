@@ -21,9 +21,12 @@ export async function POST(request: NextRequest) {
       user_pin: pin,
     });
 
+    console.log('[Login] RPC result:', { data, rpcError });
+
     if (rpcError) {
+      console.error('[Login] RPC Error:', rpcError);
       return NextResponse.json(
-        { error: 'Error al autenticar' },
+        { error: 'Error al autenticar', details: rpcError.message },
         { status: 500 }
       );
     }

@@ -150,10 +150,41 @@ END;
 $$;
 
 -- ============================================================================
--- SECCIÓN 6: VERIFICACIÓN POST-CORRECCIÓN
+-- SECCIÓN 6: FUNCIÓN DE AUTENTICACIÓN POR PIN
+-- ============================================================================
+
+CREATE OR REPLACE FUNCTION public.authenticate_with_pin(
+  user_email text,
+  user_pin text
+)
+RETURNS TABLE (
+  user_id uuid,
+  empresa_id text,
+  rol text
+)
+LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  RETURN QUERY
+  SELECT 
+    u.id AS user_id,
+    ue.id_empresa AS empresa_id,
+    ue.rol::text
+  FROM public.usuarios u
+  INNER JOIN public.usuario_empresa ue ON u.id = ue.id_usuario
+  WHERE u.email = user_email
+    AND u.pin_hash = crypt(user_pin, u.pin_hash)
+    AND u.activo = true
+    AND ue.activo = true
+  LIMIT 1;
+END;
+$$;
+
+-- ============================================================================
+-- SECCIÓN 7: VERIFICACIÓN POST-CORRECCIÓN
 -- ============================================================================
 
 -- Para verificar en SQL:
 -- SELECT * FROM public.v_usuarios_empresas LIMIT 1;
 -- SELECT public.count_user_tenants('tu-uuid-aqui');
 -- SELECT * FROM public.get_user_tenants('tu-uuid-aqui');
+-- SELECT * FROM public.authenticate_with_pin('email@test.com', '1234');
