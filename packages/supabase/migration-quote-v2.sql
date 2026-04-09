@@ -181,14 +181,14 @@ BEGIN
   -- Verificar si existe cotización en borrador para este evento
   SELECT COUNT(*), COALESCE(MAX(id), NULL) INTO v_existing_count, v_cotizacion_id
   FROM public.cotizaciones
-  WHERE evento_id = p_evento_id AND tenant_id = p_tenant_id AND status = 'draft';
+  WHERE evento_id = p_evento_id AND tenant_id = p_tenant_id AND estado = 'borrador';
   
   IF v_existing_count = 0 THEN
     -- Crear nueva cotización
     INSERT INTO public.cotizaciones (
-      evento_id, tenant_id, status, subtotal, total, anticipo, saldo, notes
+      evento_id, tenant_id, estado, subtotal, total, anticipo, saldo, notas
     ) VALUES (
-      p_evento_id, p_tenant_id, 'draft', 0, 0, 0, 0, ''
+      p_evento_id, p_tenant_id, 'borrador', 0, 0, 0, 0, ''
     )
     RETURNING id INTO v_cotizacion_id;
   END IF;

@@ -11,13 +11,13 @@ CREATE TABLE IF NOT EXISTS public.cotizaciones (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   evento_id text NOT NULL REFERENCES public.eventos(id) ON DELETE CASCADE,
   version integer NOT NULL DEFAULT 1,
-  status text NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'emitted', 'accepted', 'rejected', 'superseded')),
+  estado text NOT NULL DEFAULT 'borrador' CHECK (estado IN ('borrador', 'enviada', 'aprobada', 'rechazada', 'superada')),
   subtotal numeric NOT NULL DEFAULT 0,
   discount_total numeric NOT NULL DEFAULT 0,
   total numeric NOT NULL DEFAULT 0,
   anticipo numeric NOT NULL DEFAULT 0,
   saldo numeric NOT NULL DEFAULT 0,
-  notes text DEFAULT '',
+  notas text DEFAULT '',
   valid_until date,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now(),
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS public.evento_asignaciones (
 
 -- Índices de rendimiento
 CREATE INDEX IF NOT EXISTS idx_cotizaciones_evento ON public.cotizaciones(evento_id);
-CREATE INDEX IF NOT EXISTS idx_cotizaciones_tenant_status ON public.cotizaciones(tenant_id, status);
+CREATE INDEX IF NOT EXISTS idx_cotizaciones_tenant_estado ON public.cotizaciones(tenant_id, estado);
 CREATE INDEX IF NOT EXISTS idx_quote_items_cotizacion ON public.quote_items(cotizacion_id);
 CREATE INDEX IF NOT EXISTS idx_quote_items_sort ON public.quote_items(cotizacion_id, sort_order);
 CREATE INDEX IF NOT EXISTS idx_evento_asignaciones_usuario ON public.evento_asignaciones(usuario_id);
@@ -227,22 +227,22 @@ BEGIN
   FROM public.cotizaciones WHERE evento_id = old_cotizacion.evento_id;
   
   UPDATE public.cotizaciones
-  SET status = 'superseded', updated_at = now()
+  SET estado = 'superada', updated_at = now()
   WHERE id = p_cotizacion_id;
   
   INSERT INTO public.cotizaciones (
-    evento_id, version, status, subtotal, discount_total, total,
-    anticipo, saldo, notes, valid_until, created_by, tenant_id
+    evento_id, version, estado, subtotal, discount_total, total,
+    anticipo, saldo, notas, valid_until, created_by, tenant_id
   ) VALUES (
     old_cotizacion.evento_id,
     max_version + 1,
-    'emitted',
+    'enviada',
     old_cotizacion.subtotal,
     old_cotizacion.discount_total,
     old_cotizacion.total,
     old_cotizacion.anticipo,
     old_cotizacion.saldo,
-    old_cotizacion.notes,
+    old_cotizacion.notas,
     old_cotizacion.valid_until,
     auth.uid(),
     old_cotizacion.tenant_id
