@@ -6,60 +6,123 @@ import { QuoteItemRow } from './QuoteItemRow';
 import { FloatingSummary } from './FloatingSummary';
 import { CatalogSearch } from './CatalogSearch';
 import type { CatalogItem } from './quote.types';
-import { X, FileText, Send, Loader2, ChevronLeft } from 'lucide-react';
+import { FileText, Send, Loader2, ChevronLeft, AlertCircle } from 'lucide-react';
 
 interface SmartQuoteSidebarProps {
   cotizacionId: string | null;
   eventoId: string;
+  tenantId: string;
   onClose: () => void;
-  onSaved?: (cotizacion: any) => void;
+  onSaved?: (cotizacionId: string) => void;
   onPdfRequested?: (cotizacionId: string) => void;
 }
 
-const MOCK_CATALOG: CatalogItem[] = [
-  { id: '1', nombre: 'Silla Tiffany Blanca', precio_sugerido: 150, categoria: 'Mobiliario', unidad: 'por pieza', icono: 'chair' },
-  { id: '2', nombre: 'Mesa Redonda 150cm', precio_sugerido: 450, categoria: 'Mobiliario', unidad: 'por pieza', icono: 'table' },
-  { id: '3', nombre: 'Mantel Blanco 300x150', precio_sugerido: 200, categoria: 'Textil', unidad: 'por pieza', icono: 'cloth' },
-  { id: '4', nombre: 'Arreglo Floral Premium', precio_sugerido: 850, categoria: 'Floral', unidad: 'por arreglo', icono: 'flower' },
-  { id: '5', nombre: 'Iluminación LED RGB', precio_sugerido: 1200, categoria: 'Iluminación', unidad: 'por paquete', icono: 'light' },
-  { id: '6', nombre: 'DJ + Equipamiento', precio_sugerido: 3500, categoria: 'Audio', unidad: 'por evento', icono: 'music' },
-  { id: '7', nombre: 'Catering Basic p/persona', precio_sugerido: 280, categoria: 'Catering', unidad: 'por persona', icono: 'food' },
-  { id: '8', nombre: 'Carpa 10x20m', precio_sugerido: 8500, categoria: 'Instalación', unidad: 'por evento', icono: 'tent' },
-];
+export function SmartQuoteSidebar({ 
+  cotizacionId: initialCotizacionId, 
+  eventoId, 
+  tenantId,
+  onClose 
+}: SmartQuoteSidebarProps) {
+  const { 
+    cotizacion, 
+    computed, 
+    isDirty, 
+    isLoading,
+    isSaving,
+    error,
+    loadCotizacion,
+    saveCotizacion,
+    addItem,
+    addLocalItem,
+    cotizacionId 
+  } = useQuote();
 
-export function SmartQuoteSidebar({ cotizacionId, eventoId, onClose }: SmartQuoteSidebarProps) {
-  const { cotizacion, computed, isDirty, addItem } = useQuote();
   const [searchQuery, setSearchQuery] = useState('');
   const [catalogResults, setCatalogResults] = useState<CatalogItem[]>([]);
   const [isSearching, setIsSearching] = useState(false);
-  const [isSaving, setIsSaving] = useState(false);
+  const [showNewItemForm, setShowNewItemForm] = useState(false);
+  const [newItemName, setNewItemName] = useState('');
+  const [newItemPrice, setNewItemPrice] = useState('');
+
+  useEffect(() => {
+    if (eventoId && tenantId) {
+      loadCotizacion(eventoId, tenantId);
+    }
+  }, [eventoId, tenantId, loadCotizacion]);
 
   useEffect(() => {
     if (searchQuery.length >= 2) {
       setIsSearching(true);
-      const timer = setTimeout(() => {
-        const results = MOCK_CATALOG.filter(item =>
-          item.nombre.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.categoria.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-        setCatalogResults(results);
-        setIsSearching(false);
-      }, 200);
+      const timer = setTimeout(async () => {
+        try {
+          const token = getTokenFromCookies();
+          if (!token) return;
+
+          const response = await fetch(
+            `/api/catalogos/productos?tenant=${encodeURIComponent(tenantId)}&q=${encodeURIComponent(searchQuery)}`,
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+
+          if (response.ok) {
+            const data = await response.json();
+            setCatalogResults(data.productos || []);
+          }
+        } catch (err) {
+          console.error('[SmartQuoteSidebar] Search error:', err);
+        } finally {
+          setIsSearching(false);
+        }
+      }, 300);
       return () => clearTimeout(timer);
     } else {
       setCatalogResults([]);
     }
-  }, [searchQuery]);
+  }, [searchQuery, tenantId]);
 
   const handleSelectCatalogItem = useCallback((item: CatalogItem) => {
     addItem(item);
+    setSearchQuery('');
+    setCatalogResults([]);
   }, [addItem]);
 
+  const handleAddLocalItem = useCallback(() => {
+    if (newItemName.trim() && newItemPrice) {
+      const precio = parseFloat(newItemPrice);
+      if (!isNaN(precio) && precio > 0) {
+        addLocalItem(newItemName.trim(), precio);
+        setNewItemName('');
+        setNewItemPrice('');
+        setShowNewItemForm(false);
+      }
+    }
+  }, [newItemName, newItemPrice, addLocalItem]);
+
   const handleSave = useCallback(async () => {
-    setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setIsSaving(false);
-  }, []);
+    const savedId = await saveCotizacion();
+    if (savedId) {
+      console.log('[SmartQuoteSidebar] Saved cotizacion:', savedId);
+    }
+  }, [saveCotizacion]);
+
+  if (isLoading) {
+    return (
+      <aside
+        className="h-screen flex flex-col border-l border-white/[0.06]"
+        style={{
+          width: '380px',
+          background: 'oklch(0.11 0 0)',
+        }}
+      >
+        <div className="flex-1 flex items-center justify-center">
+          <Loader2 className="w-8 h-8 animate-spin" style={{ color: 'oklch(78% 0.12 75)' }} />
+        </div>
+      </aside>
+    );
+  }
 
   return (
     <aside
@@ -80,7 +143,7 @@ export function SmartQuoteSidebar({ cotizacionId, eventoId, onClose }: SmartQuot
           <div>
             <h2 className="text-sm font-semibold text-white">Cotización</h2>
             <p className="text-xs" style={{ color: 'oklch(0.55 0 0)' }}>
-              {cotizacion.folio || 'Nueva cotización'}
+              {cotizacionId ? `ID: ${cotizacionId.substring(0, 8)}...` : 'Nueva cotización'}
             </p>
           </div>
         </div>
@@ -93,6 +156,13 @@ export function SmartQuoteSidebar({ cotizacionId, eventoId, onClose }: SmartQuot
         </button>
       </header>
 
+      {error && (
+        <div className="mx-4 mt-4 p-3 rounded-lg bg-red-500/10 border border-red-500/20 flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-red-400 flex-shrink-0" />
+          <p className="text-xs text-red-400">{error}</p>
+        </div>
+      )}
+
       <div className="p-4">
         <CatalogSearch
           query={searchQuery}
@@ -102,6 +172,61 @@ export function SmartQuoteSidebar({ cotizacionId, eventoId, onClose }: SmartQuot
           isLoading={isSearching}
         />
       </div>
+
+      <div className="flex items-center justify-between px-4 pb-2">
+        <span className="text-xs" style={{ color: 'oklch(0.55 0 0)' }}>
+          {cotizacion.items.length} ítems
+        </span>
+        <button
+          onClick={() => setShowNewItemForm(true)}
+          className="text-xs px-2 py-1 rounded hover:bg-white/5 transition-colors"
+          style={{ color: 'oklch(78% 0.12 75)' }}
+        >
+          + Item manual
+        </button>
+      </div>
+
+      {showNewItemForm && (
+        <div className="mx-4 mb-2 p-3 rounded-lg" style={{ background: 'oklch(0.15 0 0)' }}>
+          <input
+            type="text"
+            placeholder="Nombre del item"
+            value={newItemName}
+            onChange={(e) => setNewItemName(e.target.value)}
+            className="w-full bg-transparent text-sm text-white outline-none placeholder:text-white/40 mb-2"
+          />
+          <div className="flex items-center gap-2">
+            <span className="text-xs" style={{ color: 'oklch(0.55 0 0)' }}>$</span>
+            <input
+              type="number"
+              placeholder="Precio"
+              value={newItemPrice}
+              onChange={(e) => setNewItemPrice(e.target.value)}
+              className="flex-1 bg-transparent text-sm text-white outline-none placeholder:text-white/40"
+            />
+          </div>
+          <div className="flex items-center gap-2 mt-2">
+            <button
+              onClick={handleAddLocalItem}
+              className="flex-1 py-1.5 rounded-lg text-xs font-medium"
+              style={{ background: 'oklch(78% 0.12 75)', color: 'black' }}
+            >
+              Agregar
+            </button>
+            <button
+              onClick={() => {
+                setShowNewItemForm(false);
+                setNewItemName('');
+                setNewItemPrice('');
+              }}
+              className="px-3 py-1.5 rounded-lg text-xs"
+              style={{ background: 'oklch(0.2 0 0)' }}
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
         {cotizacion.items.length === 0 ? (
@@ -116,7 +241,7 @@ export function SmartQuoteSidebar({ cotizacionId, eventoId, onClose }: SmartQuot
               Sin ítems
             </p>
             <p className="text-xs" style={{ color: 'oklch(0.45 0 0)' }}>
-              Busca en el catálogo para agregar productos
+              Busca en el catálogo o agrega un item manual
             </p>
           </div>
         ) : (
@@ -157,4 +282,10 @@ export function SmartQuoteSidebar({ cotizacionId, eventoId, onClose }: SmartQuot
       </footer>
     </aside>
   );
+}
+
+function getTokenFromCookies(): string | null {
+  if (typeof document === 'undefined') return null;
+  const match = document.cookie.match(/(?:^|;\s*)aurea_token=([^;]*)/);
+  return match ? decodeURIComponent(match[1]) : null;
 }

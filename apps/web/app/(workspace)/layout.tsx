@@ -5,7 +5,7 @@ import { QuoteProvider } from '@aurea/ui';
 import { useWorkspace } from '@aurea/ui';
 
 function WorkspaceLayoutContent({ children }: { children: React.ReactNode }) {
-  const { isDetailOpen, selectedEventId, closeDetail } = useWorkspace();
+  const { isDetailOpen, selectedEventId, closeDetail, tenantId } = useWorkspace();
 
   return (
     <div className="flex h-screen overflow-hidden" style={{ background: 'oklch(0.11 0 0)' }}>
@@ -15,11 +15,12 @@ function WorkspaceLayoutContent({ children }: { children: React.ReactNode }) {
         {children}
       </main>
 
-      {isDetailOpen && selectedEventId && (
-        <QuoteProvider initialQuote={{ evento_id: selectedEventId }}>
+      {isDetailOpen && selectedEventId && tenantId && (
+        <QuoteProvider initialQuote={{ evento_id: selectedEventId }} tenantId={tenantId}>
           <SmartQuoteSidebar
             cotizacionId={null}
             eventoId={selectedEventId}
+            tenantId={tenantId}
             onClose={closeDetail}
           />
         </QuoteProvider>
