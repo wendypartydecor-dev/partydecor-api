@@ -129,15 +129,21 @@ export function calculateLineaTotal(item: QuoteItem): {
   descuentoMonto: number;
 } {
   const precioOriginal = roundCurrency(item.precio_unitario);
-  const descuentoMonto = roundCurrency(item.descuento);
   const lineaTotalOriginal = roundCurrency(precioOriginal * item.cantidad);
+  const descuentoPorcentaje = Math.min(100, Math.max(0, item.descuento));
+  const descuentoMonto = roundCurrency(lineaTotalOriginal * (descuentoPorcentaje / 100));
   const lineaTotalEfectiva = roundCurrency(lineaTotalOriginal - descuentoMonto);
   const precioUnitarioEfectivo = item.cantidad > 0 ? roundCurrency(lineaTotalEfectiva / item.cantidad) : precioOriginal;
   
   return { precioUnitarioEfectivo, lineaTotalOriginal, lineaTotalEfectiva, descuentoMonto };
 }
 
-export function calculateQuoteTotals(items: QuoteItem[], _impuestos: TaxConfig[]): CotizacionComputed {
+export function calculateQuoteTotals(
+  items: QuoteItem[], 
+  _impuestos: TaxConfig[],
+  ivaPorcentaje: number = 16,
+  isrPorcentaje: number = 1.25
+): CotizacionComputed {
   let subtotal_bruto = 0;
   let total_descuentos = 0;
   let total_iva = 0;
@@ -149,10 +155,10 @@ export function calculateQuoteTotals(items: QuoteItem[], _impuestos: TaxConfig[]
     total_descuentos += descuentoMonto;
     
     if (item.incluye_iva) {
-      total_iva += lineaTotalEfectiva * 0.16;
+      total_iva += lineaTotalEfectiva * (ivaPorcentaje / 100);
     }
     if (item.incluye_isr) {
-      total_isr += lineaTotalEfectiva * 0.0125;
+      total_isr += lineaTotalEfectiva * (isrPorcentaje / 100);
     }
   }
   

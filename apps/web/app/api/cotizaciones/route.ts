@@ -72,7 +72,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { evento_id, tenant_id, items } = body;
+    const { evento_id, tenant_id, items, iva_porcentaje, isr_porcentaje } = body;
 
     if (!evento_id || !tenant_id) {
       return NextResponse.json({
@@ -84,11 +84,29 @@ export async function POST(request: NextRequest) {
 
     console.log('[API cotizaciones] POST for evento:', evento_id, 'tenant:', tenant_id);
     console.log('[API cotizaciones] Items count:', items?.length || 0);
+    console.log('[API cotizaciones] Tax percentages:', { iva: iva_porcentaje, isr: isr_porcentaje });
+
+    const sanitizedItems = (items || []).map((item: Record<string, unknown>) => ({
+      catalogo_id: item.catalogo_id ?? null,
+      nombre_personalizado: item.nombre_personalizado ?? '',
+      nombre_snapshot: item.nombre_snapshot ?? item.nombre_personalizado ?? '',
+      precio_unitario_aplicado: item.precio_unitario_aplicado ?? 0,
+      descuento: item.descuento ?? 0,
+      cantidad: item.cantidad ?? 1,
+      categoria: item.categoria ?? '',
+      unidad: item.unidad ?? 'pz',
+      incluye_iva: item.incluye_iva ?? true,
+      incluye_isr: item.incluye_isr ?? false,
+      sort_order: item.sort_order ?? 0,
+      notas_item: item.notas_item ?? '',
+    }));
 
     const { data, error } = await supabase.rpc('save_cotizacion_with_items', {
       p_evento_id: evento_id,
       p_tenant_id: tenant_id,
-      p_items: items || [],
+      p_items: sanitizedItems,
+      p_iva_porcentaje: iva_porcentaje ?? null,
+      p_isr_porcentaje: isr_porcentaje ?? null,
     });
 
     if (error) {

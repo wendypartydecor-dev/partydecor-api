@@ -86,7 +86,7 @@ export function QuoteProvider({
   const tenantIdRef = useRef<string | null>(tenantId || null);
 
   const computed = useMemo(() => {
-    return calculateQuoteTotals(cotizacion.items, cotizacion.impuestos);
+    return calculateQuoteTotals(cotizacion.items, cotizacion.impuestos, 16, 1.25);
   }, [cotizacion.items, cotizacion.impuestos]);
 
   const loadCotizacion = useCallback(async (eventoId: string, tenant: string) => {
