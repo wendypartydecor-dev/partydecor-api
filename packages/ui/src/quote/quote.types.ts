@@ -70,13 +70,16 @@ export interface CotizacionApiResponse {
   id: string;
   evento_id: string;
   tenant_id: string;
-  estado: string;
+  folio: string | null;
+  estado: 'borrador' | 'enviada' | 'aprobada' | 'rechazada';
   subtotal: number;
   discount_total: number;
   total: number;
   anticipo: number;
   saldo: number;
-  notes: string;
+  notas: string;
+  iva_porcentaje: number;
+  isr_porcentaje: number;
   created_at: string;
   updated_at: string;
 }
