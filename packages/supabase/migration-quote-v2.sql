@@ -83,7 +83,7 @@ BEGIN
 END;
 $$;
 
--- Función para recalcular totales de cotización (acepta UUID)
+-- Función para recalcular totales de cotización (usando quote_items existente)
 CREATE OR REPLACE FUNCTION public.recalcular_totales_cotizacion(p_cotizacion_id uuid)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -94,22 +94,15 @@ DECLARE
   rec RECORD;
 BEGIN
   FOR rec IN
-    SELECT
-      lc.subtotal_linea,
-      lc.incluye_iva,
-      lc.incluye_isr
-    FROM public.lineas_cotizacion lc
-    JOIN public.cotizaciones c ON lc.cotizacion_id = c.id
-    WHERE lc.cotizacion_id = p_cotizacion_id
-      AND c.tenant_id = public.get_jwt_tenant_id()   -- usar función correcta
+    SELECT qi.line_total
+    FROM public.quote_items qi
+    JOIN public.cotizaciones c ON qi.cotizacion_id = c.id
+    WHERE qi.cotizacion_id = p_cotizacion_id
+      AND c.tenant_id = public.get_jwt_tenant_id()
   LOOP
-    v_sub := v_sub + rec.subtotal_linea;
-    IF rec.incluye_iva THEN
-      v_iva_total := v_iva_total + (rec.subtotal_linea * 0.16);
-    END IF;
-    IF rec.incluye_isr THEN
-      v_isr_total := v_isr_total + (rec.subtotal_linea * 0.0125);
-    END IF;
+    v_sub := v_sub + rec.line_total;
+    v_iva_total := v_iva_total + (rec.line_total * 0.16);
+    v_isr_total := v_isr_total + (rec.line_total * 0.0125);
   END LOOP;
   
   v_total := v_sub + v_iva_total - v_isr_total;
@@ -193,40 +186,38 @@ BEGIN
     RETURNING id INTO v_cotizacion_id;
   END IF;
   
-  -- Limpiar líneas existentes
-  DELETE FROM public.lineas_cotizacion WHERE cotizacion_id = v_cotizacion_id;
+  -- Limpiar líneas existentes (usar quote_items si existe, sinon lineas_cotizacion)
+  DELETE FROM public.quote_items WHERE cotizacion_id = v_cotizacion_id;
   
-  -- Insertar nuevas líneas
+  -- Insertar nuevas líneas en quote_items (columnas en inglés según schema real)
   FOR v_item IN SELECT * FROM jsonb_array_elements(p_items)
   LOOP
-    INSERT INTO public.lineas_cotizacion (
+    INSERT INTO public.quote_items (
       cotizacion_id,
-      catalogo_id,
-      nombre_personalizado,
-      nombre_snapshot,
-      precio_unitario_aplicado,
-      descuento,
-      cantidad,
-      categoria,
-      unidad,
-      incluye_iva,
-      incluye_isr,
+      catalog_item_id,
+      name,
+      name_original,
+      category,
+      unit,
+      unit_price,
+      discount_type,
+      discount_value,
+      quantity,
       sort_order,
-      notas_item
+      notes
     ) VALUES (
       v_cotizacion_id,
-      NULLIF(v_item->>'catalogo_id', '')::uuid,
-      COALESCE(v_item->>'nombre_personalizado', v_item->>'nombre', 'Item sin nombre'),
-      COALESCE(v_item->>'nombre_snapshot', v_item->>'nombre', 'Item sin nombre'),
-      COALESCE((v_item->>'precio_unitario_aplicado')::numeric, 0),
+      NULLIF(v_item->>'catalogo_id', '')::text,
+      COALESCE(v_item->>'nombre_personalizado', v_item->>'name', 'Item sin nombre'),
+      COALESCE(v_item->>'nombre_snapshot', v_item->>'name_original', v_item->>'nombre_personalizado'),
+      COALESCE(v_item->>'categoria_tag', v_item->>'category', ''),
+      COALESCE(v_item->>'unidad', v_item->>'unit', 'pz'),
+      COALESCE((v_item->>'precio_unitario')::numeric, (v_item->>'unit_price')::numeric, 0),
+      'fixed',
       COALESCE((v_item->>'descuento')::numeric, 0),
-      COALESCE((v_item->>'cantidad')::integer, 1),
-      COALESCE(v_item->>'categoria', ''),
-      COALESCE(v_item->>'unidad', 'pz'),
-      COALESCE((v_item->>'incluye_iva')::boolean, true),
-      COALESCE((v_item->>'incluye_isr')::boolean, false),
+      COALESCE((v_item->>'cantidad')::integer, (v_item->>'quantity')::integer, 1),
       COALESCE((v_item->>'sort_order')::integer, 0),
-      COALESCE(v_item->>'notas_item', '')
+      COALESCE(v_item->>'notas', v_item->>'notes', '')
     );
   END LOOP;
   

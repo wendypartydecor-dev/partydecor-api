@@ -42,19 +42,21 @@ export function QuoteItemRow({ item, index, currency }: QuoteItemRowProps) {
     updateItem(item.id, { cantidad: newCantidad });
   }, [item.id, item.cantidad, updateItem]);
 
+  const getDescuentoPorcentaje = () => {
+    if (item.precio_unitario <= 0 || item.cantidad <= 0) return 0;
+    return Math.round((item.descuento / (item.precio_unitario * item.cantidad)) * 100);
+  };
+
   const handleDescuentoChange = useCallback((delta: number) => {
-    const precioTotal = item.precio_unitario * item.cantidad;
-    const descuentoPorcentaje = precioTotal > 0 
-      ? (item.descuento / precioTotal) * 100 
-      : 0;
-    const newPorcentaje = Math.max(0, Math.min(100, descuentoPorcentaje + delta));
-    const newDescuento = roundCurrency(precioTotal * (newPorcentaje / 100));
+    const currentPct = getDescuentoPorcentaje();
+    const newPct = Math.max(0, Math.min(100, currentPct + delta));
+    const precioUnitario = item.precio_unitario;
+    const cantidad = item.cantidad;
+    const newDescuento = roundCurrency(precioUnitario * cantidad * (newPct / 100));
     updateItem(item.id, { descuento: newDescuento });
   }, [item.id, item.descuento, item.precio_unitario, item.cantidad, updateItem]);
 
-  const descuentoPorcentaje = item.precio_unitario > 0 && item.cantidad > 0
-    ? Math.round((item.descuento / (item.precio_unitario * item.cantidad)) * 100)
-    : 0;
+  const descuentoPorcentaje = getDescuentoPorcentaje();
 
   return (
     <div
@@ -112,7 +114,7 @@ export function QuoteItemRow({ item, index, currency }: QuoteItemRowProps) {
           <div className="flex items-center gap-4 text-xs" style={{ color: 'oklch(0.50 0 0)' }}>
             <div className="flex items-center gap-1">
               <button
-                onClick={() => handleDescuentoChange(-50)}
+                onClick={() => handleDescuentoChange(-5)}
                 className="p-0.5 rounded hover:bg-white/10 transition-colors"
               >
                 <Minus className="w-3 h-3" />
@@ -121,7 +123,7 @@ export function QuoteItemRow({ item, index, currency }: QuoteItemRowProps) {
                 {descuentoPorcentaje > 0 ? `${descuentoPorcentaje}% dto` : 'Sin dto'}
               </span>
               <button
-                onClick={() => handleDescuentoChange(50)}
+                onClick={() => handleDescuentoChange(5)}
                 className="p-0.5 rounded hover:bg-white/10 transition-colors"
               >
                 <Plus className="w-3 h-3" />
