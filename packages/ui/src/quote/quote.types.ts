@@ -130,9 +130,9 @@ export function calculateLineaTotal(item: QuoteItem): {
 } {
   const precioOriginal = roundCurrency(item.precio_unitario);
   const lineaTotalOriginal = roundCurrency(precioOriginal * item.cantidad);
-  const descuentoPorcentaje = Math.min(100, Math.max(0, item.descuento));
-  const descuentoMonto = roundCurrency(lineaTotalOriginal * (descuentoPorcentaje / 100));
-  const lineaTotalEfectiva = roundCurrency(lineaTotalOriginal - descuentoMonto);
+  const descuentoMonto = roundCurrency(Math.max(0, item.descuento));
+  const precioConDescuento = roundCurrency(precioOriginal - descuentoMonto);
+  const lineaTotalEfectiva = roundCurrency(precioConDescuento * item.cantidad);
   const precioUnitarioEfectivo = item.cantidad > 0 ? roundCurrency(lineaTotalEfectiva / item.cantidad) : precioOriginal;
   
   return { precioUnitarioEfectivo, lineaTotalOriginal, lineaTotalEfectiva, descuentoMonto };
@@ -224,7 +224,6 @@ export function quoteItemToApiFormat(item: QuoteItem): Record<string, unknown> {
     precio_unitario_aplicado: item.precio_unitario,
     descuento: item.descuento,
     cantidad: item.cantidad,
-    categoria: item.categoria_tag,
     unidad: item.unidad,
     incluye_iva: item.incluye_iva,
     incluye_isr: item.incluye_isr,

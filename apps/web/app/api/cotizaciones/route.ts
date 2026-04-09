@@ -93,7 +93,6 @@ export async function POST(request: NextRequest) {
       precio_unitario_aplicado: item.precio_unitario_aplicado ?? 0,
       descuento: item.descuento ?? 0,
       cantidad: item.cantidad ?? 1,
-      categoria: item.categoria ?? '',
       unidad: item.unidad ?? 'pz',
       incluye_iva: item.incluye_iva ?? true,
       incluye_isr: item.incluye_isr ?? false,
@@ -105,8 +104,8 @@ export async function POST(request: NextRequest) {
       p_evento_id: evento_id,
       p_tenant_id: tenant_id,
       p_items: sanitizedItems,
-      p_iva_porcentaje: iva_porcentaje ?? null,
-      p_isr_porcentaje: isr_porcentaje ?? null,
+      p_iva_porcentaje: iva_porcentaje ?? 16,
+      p_isr_porcentaje: isr_porcentaje ?? 1.25,
     });
 
     if (error) {
