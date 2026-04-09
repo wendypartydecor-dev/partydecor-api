@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react';
 import { useQuote } from './QuoteProvider';
-import { calculateLineaTotal, formatCurrency, type QuoteItem } from './quote.types';
+import { calculateLineaTotal, formatCurrency, roundCurrency, type QuoteItem } from './quote.types';
 import { Trash2, GripVertical, Minus, Plus } from 'lucide-react';
 
 interface QuoteItemRowProps {
@@ -43,9 +43,14 @@ export function QuoteItemRow({ item, index, currency }: QuoteItemRowProps) {
   }, [item.id, item.cantidad, updateItem]);
 
   const handleDescuentoChange = useCallback((delta: number) => {
-    const newDescuento = Math.max(0, Math.min(100, item.descuento_pct + delta));
-    updateItem(item.id, { descuento_pct: newDescuento });
-  }, [item.id, item.descuento_pct, updateItem]);
+    const maxDescuento = item.precio_unitario * item.cantidad;
+    const newDescuento = Math.max(0, Math.min(maxDescuento, item.descuento + delta));
+    updateItem(item.id, { descuento: roundCurrency(newDescuento) });
+  }, [item.id, item.descuento, item.precio_unitario, item.cantidad, updateItem]);
+
+  const descuentoPorcentaje = item.precio_unitario > 0 
+    ? Math.round((item.descuento / item.precio_unitario / item.cantidad) * 100) 
+    : 0;
 
   return (
     <div
@@ -103,14 +108,16 @@ export function QuoteItemRow({ item, index, currency }: QuoteItemRowProps) {
           <div className="flex items-center gap-4 text-xs" style={{ color: 'oklch(0.50 0 0)' }}>
             <div className="flex items-center gap-1">
               <button
-                onClick={() => handleDescuentoChange(-5)}
+                onClick={() => handleDescuentoChange(-50)}
                 className="p-0.5 rounded hover:bg-white/10 transition-colors"
               >
                 <Minus className="w-3 h-3" />
               </button>
-              <span>{item.descuento_pct}% dto</span>
+              <span title={`Descuento: ${formatCurrency(item.descuento, currency)}`}>
+                {descuentoPorcentaje > 0 ? `${descuentoPorcentaje}% dto` : 'Sin dto'}
+              </span>
               <button
-                onClick={() => handleDescuentoChange(5)}
+                onClick={() => handleDescuentoChange(50)}
                 className="p-0.5 rounded hover:bg-white/10 transition-colors"
               >
                 <Plus className="w-3 h-3" />

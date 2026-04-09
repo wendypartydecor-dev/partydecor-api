@@ -1,13 +1,6 @@
 import { create } from 'zustand';
 import { subscribeWithSelector } from 'zustand/middleware';
-import type {
-  QuoteItem,
-  Quote,
-  QuoteCanvasState,
-  QuoteCanvasAction,
-  ItemDiscountType,
-  DragState,
-} from './quote.types';
+import type { QuoteItem, Quote, QuoteCanvasState, QuoteCanvasAction, ItemDiscountType, DragState } from './quote.types';
 import { calculateItemTotals, createQuoteItemFromCatalog } from './quote.types';
 import { computeQuoteTotals } from './useQuoteTotals';
 
@@ -88,11 +81,7 @@ export const useQuoteCanvas = create<QuoteCanvasStore>()(
           const items = state.items.map(item => {
             if (item.id === action.itemId) {
               const updated = { ...item, quantity: Math.max(1, action.quantity) };
-              let stockStatus = item.stockStatus;
-              if (item.stockQuantityAvailable > 0) {
-                stockStatus = action.quantity > item.stockQuantityAvailable ? 'low' : 'available';
-              }
-              return { ...updated, stockStatus, ...calculateItemTotals(updated) };
+              return { ...updated, ...calculateItemTotals(updated) };
             }
             return item;
           });
@@ -350,40 +339,36 @@ export const useQuoteCanvas = create<QuoteCanvasStore>()(
             .from('cotizaciones')
             .update({
               subtotal: totals.subtotal,
-              discount_total: totals.discountTotal,
               total: totals.total,
-              notes: '',
             })
             .eq('id', state.quoteId);
           
           if (error) throw error;
           
           await supabase
-            .from('quote_items')
+            .from('lineas_cotizacion')
             .delete()
             .eq('cotizacion_id', state.quoteId);
           
           if (state.items.length > 0) {
             const itemsToInsert = state.items.map((item, index) => ({
               cotizacion_id: state.quoteId,
-              catalog_item_id: item.catalogItemId,
-              name: item.name,
-              name_original: item.nameOriginal,
-              category: item.category,
-              description: item.description || '',
-              unit: item.unit,
-              unit_price: item.unitPrice,
-              discount_type: item.discountType,
-              discount_value: item.discountValue,
-              quantity: item.quantity,
-              stock_status: item.stockStatus,
-              stock_quantity_available: item.stockQuantityAvailable,
+              catalogo_id: item.catalogItemId,
+              nombre_personalizado: item.name,
+              nombre_snapshot: item.nameOriginal || item.name,
+              precio_unitario_aplicado: item.unitPrice,
+              descuento: item.discountValue,
+              cantidad: item.quantity,
+              categoria: item.category,
+              unidad: item.unit,
+              incluye_iva: true,
+              incluye_isr: false,
               sort_order: index,
-              notes: item.notes || '',
+              notas_item: item.notes || '',
             }));
             
             const { error: itemsError } = await supabase
-              .from('quote_items')
+              .from('lineas_cotizacion')
               .insert(itemsToInsert);
             
             if (itemsError) throw itemsError;
@@ -395,9 +380,8 @@ export const useQuoteCanvas = create<QuoteCanvasStore>()(
             .from('cotizaciones')
             .insert({
               evento_id: state.eventoId,
-              status: 'draft',
+              estado: 'borrador',
               subtotal: totals.subtotal,
-              discount_total: totals.discountTotal,
               total: totals.total,
             })
             .select()
@@ -408,23 +392,21 @@ export const useQuoteCanvas = create<QuoteCanvasStore>()(
           if (state.items.length > 0) {
             const itemsToInsert = state.items.map((item, index) => ({
               cotizacion_id: newQuote.id,
-              catalog_item_id: item.catalogItemId,
-              name: item.name,
-              name_original: item.nameOriginal,
-              category: item.category,
-              description: item.description || '',
-              unit: item.unit,
-              unit_price: item.unitPrice,
-              discount_type: item.discountType,
-              discount_value: item.discountValue,
-              quantity: item.quantity,
-              stock_status: item.stockStatus,
-              stock_quantity_available: item.stockQuantityAvailable,
+              catalogo_id: item.catalogItemId,
+              nombre_personalizado: item.name,
+              nombre_snapshot: item.nameOriginal || item.name,
+              precio_unitario_aplicado: item.unitPrice,
+              descuento: item.discountValue,
+              cantidad: item.quantity,
+              categoria: item.category,
+              unidad: item.unit,
+              incluye_iva: true,
+              incluye_isr: false,
               sort_order: index,
-              notes: item.notes || '',
+              notas_item: item.notes || '',
             }));
             
-            await supabase.from('quote_items').insert(itemsToInsert);
+            await supabase.from('lineas_cotizacion').insert(itemsToInsert);
           }
           
           get().markSaved(newQuote.id, newQuote.version);

@@ -89,12 +89,10 @@ export async function POST(request: NextRequest) {
       p_evento_id: evento_id,
       p_tenant_id: tenant_id,
       p_items: items || [],
-      p_iva_default: 16.00,
-      p_isr_default: 1.25,
     });
 
     if (error) {
-      console.error('[API cotizaciones] POST error:', error);
+      console.error('[API cotizaciones] POST RPC error:', error);
       return NextResponse.json({
         error: 'Error al guardar cotización',
         details: error.message,
@@ -112,9 +110,10 @@ export async function POST(request: NextRequest) {
       .single();
 
     const { data: savedItems } = await supabase
-      .from('quote_items')
+      .from('lineas_cotizacion')
       .select('*')
-      .eq('cotizacion_id', cotizacionId);
+      .eq('cotizacion_id', cotizacionId)
+      .order('sort_order', { ascending: true });
 
     return NextResponse.json({
       success: true,

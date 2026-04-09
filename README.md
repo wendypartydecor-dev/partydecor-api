@@ -1,90 +1,157 @@
-# partydecor-api
+# Aurea SaaS - Party Decor API
 
-Backend REST para Party Decor. Node.js + Express + Supabase.
+Sistema multi-tenant para gestión de eventos y cotizaciones de decoración.
 
-## Setup local
+## Stack Tecnológico
+
+- **Frontend**: Next.js 15 + React 19 + TypeScript
+- **Base de Datos**: Supabase (PostgreSQL)
+- **Autenticación**: JWT custom con PIN + Cookie
+- **UI Components**: Tailwind CSS 4 + OKLCH semantic tokens
+- **Estado**: Zustand (Workspace) + React Context (Quotes)
+
+## Arquitectura Multi-Tenant
+
+El sistema utiliza Row Level Security (RLS) de PostgreSQL para el aislamiento de datos por tenant:
+
+- Cada tenant (empresa) tiene un `tenant_id` único
+- El JWT contiene el `tenant_id` en los claims
+- Las políticas RLS filtran automáticamente por `tenant_id`
+
+### JWT Claims
+
+```json
+{
+  "sub": "user_uuid",
+  "tenant_id": "PD001",
+  "role": "authenticated",
+  "email": "user@example.com",
+  "iat": 1234567890,
+  "exp": 1234654290
+}
+```
+
+## Sistema de Cotizaciones con Snapshots
+
+Las cotizaciones implementan un sistema de **snapshots** que congela los valores de productos en el momento de la venta:
+
+### Por qué guardamos snapshots?
+
+1. **Inmutabilidad histórica**: El precio de un producto puede cambiar después de crear la cotización. El snapshot asegura que la cotización refleje exactamente lo que se cotizó.
+
+2. **Auditoría**: Permite reconstruir exactamente qué se ofreció al cliente en cualquier momento.
+
+3. **Integridad**: Si el catálogo se modifica o elimina un producto, la cotización sigue siendo válida.
+
+### Campos de Snapshot
+
+| Campo | Descripción |
+|-------|-------------|
+| `nombre_personalizado` | Nombre mostrado en la línea (puede diferir del catálogo) |
+| `nombre_snapshot` | Copia del nombre original del catálogo |
+| `precio_unitario_aplicado` | Precio congelado al momento de cotizar |
+
+## API Endpoints
+
+### Autenticación
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| POST | `/api/auth/login` | Login con PIN. Retorna JWT. |
+
+### Eventos
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/eventos` | Lista eventos del tenant |
+| POST | `/api/eventos` | Crear evento |
+| PATCH | `/api/eventos/:id` | Editar evento |
+| DELETE | `/api/eventos/:id` | Eliminar evento (solo admin) |
+
+### Cotizaciones
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/cotizaciones` | Lista cotizaciones |
+| POST | `/api/cotizaciones` | Crear/Actualizar cotización con líneas |
+| GET | `/api/cotizaciones/:id/items` | Obtener líneas de cotización |
+| POST | `/api/cotizaciones/:id/items` | Agregar línea |
+| PATCH | `/api/cotizaciones/:id/items` | Actualizar línea |
+| DELETE | `/api/cotizaciones/:id/items` | Eliminar línea |
+
+### Catálogo
+
+| Método | Ruta | Descripción |
+|--------|------|-------------|
+| GET | `/api/catalogos/productos` | Buscar productos del catálogo |
+
+## Esquema de Base de Datos
+
+### Tablas Principales
+
+- `empresas` - Tenants (con configuración fiscal: iva_default, isr_default)
+- `usuarios` - Usuarios del sistema
+- `usuario_empresa` - Relación usuario-tenant
+- `eventos` - Eventos de decoración
+- `clientes` - Clientes finales
+- `catalogos` - Catálogo de productos/servicios
+- `cotizaciones` - Cabeceras de cotización
+- `lineas_cotizacion` - Líneas de detalle con snapshots
+
+### Impuestos por Línea
+
+Cada línea de cotización puede tener configuración individual de impuestos:
+
+- `incluye_iva` (boolean, default: true) - Si false, esta línea no aporta a la base del IVA
+- `incluye_isr` (boolean, default: false) - Si true, aplica retención ISR
+
+## Setup Local
 
 ### 1. Instalar dependencias
+
 ```bash
 npm install
 ```
 
 ### 2. Crear archivo .env
+
 ```bash
 cp .env.example .env
 ```
-Edita `.env` y pon tus credenciales reales de Supabase.
-
-Para generar el JWT_SECRET:
-```bash
-node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"
-```
 
 ### 3. Correr en desarrollo
+
 ```bash
 npm run dev
 ```
 
-### 4. Verificar que funciona
-```bash
-curl http://localhost:3000/health
-# {"ok":true,"service":"partydecor-api"}
-```
+## Deploy en Vercel
 
----
+1. Push a GitHub
+2. Vercel detecta Next.js automáticamente
+3. Configurar variables de entorno en Vercel:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY`
+   - `SUPABASE_JWT_SECRET`
 
-## Endpoints
+## Migraciones de Base de Datos
 
-### Auth
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| POST | `/api/auth/login` | Login con PIN. Retorna JWT. |
+Las migraciones SQL están en `packages/supabase/`. Para aplicar:
 
-### Listas
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET | `/api/listas` | Listas de opciones (tipos, estados, etc.) |
-| GET | `/api/listas/clientes` | Lista de clientes activos |
-| GET | `/api/listas/catalogo` | Catálogo de productos |
-
-### Eventos
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET | `/api/eventos` | Lista todos los eventos |
-| POST | `/api/eventos` | Crear evento |
-| PATCH | `/api/eventos/:id` | Editar evento |
-| DELETE | `/api/eventos/:id` | Eliminar evento (solo admin) |
-
-### Items de cotización
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET | `/api/items/:idEvento` | Items de un evento |
-| POST | `/api/items/:idEvento` | Agregar item del catálogo |
-| POST | `/api/items/:idEvento/externo` | Agregar item externo |
-| PATCH | `/api/items/:idEvento/cantidad` | Actualizar cantidad |
-| PATCH | `/api/items/:idEvento/precio` | Actualizar precio |
-| DELETE | `/api/items/:idEvento/:nombre` | Eliminar item |
-| DELETE | `/api/items/:idEvento` | Limpiar cotización (solo admin) |
-
----
-
-## Deploy en Railway
-
-1. Sube el proyecto a GitHub (sin `.env`, sin `node_modules`)
-2. En Railway: **New Project → Deploy from GitHub repo**
-3. Agrega las variables de entorno en Railway → **Variables**:
-   - `SUPABASE_URL`
-   - `SUPABASE_SERVICE_KEY`
-   - `JWT_SECRET`
-   - `ALLOWED_ORIGIN` → URL de tu frontend (ej: `https://app.partydecor.mx`)
-4. Railway detecta automáticamente que es Node.js y corre `npm start`
-
----
+1. Abrir Supabase Dashboard → SQL Editor
+2. Copiar el contenido del archivo de migración
+3. Ejecutar
 
 ## Agregar un empleado
 
-Desde Supabase → SQL Editor:
 ```sql
-insert into usuarios (nombre, pin_hash, es_admin)
-values ('Maria', crypt('5678', gen_salt('bf')), false);
+INSERT INTO usuarios (nombre, pin_hash, es_admin)
+VALUES ('Maria', crypt('5678', gen_salt('bf')), false);
 ```
+
+## Convenciones de Código
+
+- **Naming**: camelCase para JS/TS, snake_case para SQL
+- **Colores**: OKLCH para tokens semánticos
+- **Commits**: Conventional Commits (feat:, fix:, refactor:)

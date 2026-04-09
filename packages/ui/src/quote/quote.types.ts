@@ -10,8 +10,10 @@ export interface QuoteItem {
   nombre_snapshot: string;
   cantidad: number;
   precio_unitario: number;
-  descuento_pct: number;
+  descuento: number;
+  subtotal_linea: number;
   categoria_tag: string;
+  unidad: string;
   notas: string;
   sort_order: number;
   incluye_iva: boolean;
@@ -68,7 +70,7 @@ export interface CotizacionApiResponse {
   id: string;
   evento_id: string;
   tenant_id: string;
-  status: string;
+  estado: string;
   subtotal: number;
   discount_total: number;
   total: number;
@@ -79,44 +81,41 @@ export interface CotizacionApiResponse {
   updated_at: string;
 }
 
-export interface QuoteItemApiResponse {
+export interface LineaCotizacionApiResponse {
   id: string;
   cotizacion_id: string;
-  catalog_item_id: string | null;
-  name: string;
-  nombre_snapshot: string;
-  category: string;
-  description: string;
-  unit: string;
-  unit_price: number;
-  discount_type: string;
-  discount_value: number;
-  unit_price_effective: number;
-  quantity: number;
-  line_total_original: number;
-  line_total: number;
+  catalogo_id: string | null;
+  nombre_personalizado: string;
+  nombre_snapshot: string | null;
+  precio_unitario_aplicado: number;
+  descuento: number;
+  subtotal_linea: number;
   incluye_iva: boolean;
   incluye_isr: boolean;
+  cantidad: number;
+  categoria: string;
+  unidad: string;
+  notas_item: string;
   sort_order: number;
-  notes: string;
 }
 
-export function mapApiItemToQuoteItem(apiItem: QuoteItemApiResponse): QuoteItem {
+export function mapApiItemToQuoteItem(apiItem: LineaCotizacionApiResponse): QuoteItem {
   return {
     id: apiItem.id,
     cotizacion_id: apiItem.cotizacion_id,
-    catalogo_id: apiItem.catalog_item_id,
-    nombre: apiItem.name,
-    nombre_snapshot: apiItem.nombre_snapshot || apiItem.name,
-    cantidad: apiItem.quantity,
-    precio_unitario: apiItem.unit_price,
-    descuento_pct: apiItem.discount_type === 'percentage' ? apiItem.discount_value : 
-                  apiItem.discount_type === 'fixed' ? (apiItem.discount_value / apiItem.unit_price) * 100 : 0,
-    categoria_tag: apiItem.category,
-    notas: apiItem.notes || '',
+    catalogo_id: apiItem.catalogo_id,
+    nombre: apiItem.nombre_personalizado,
+    nombre_snapshot: apiItem.nombre_snapshot || apiItem.nombre_personalizado,
+    cantidad: apiItem.cantidad,
+    precio_unitario: apiItem.precio_unitario_aplicado,
+    descuento: apiItem.descuento,
+    subtotal_linea: apiItem.subtotal_linea,
+    categoria_tag: apiItem.categoria,
+    unidad: apiItem.unidad || 'pz',
+    notas: apiItem.notas_item || '',
     sort_order: apiItem.sort_order,
     incluye_iva: apiItem.incluye_iva ?? true,
-    incluye_isr: apiItem.incluye_isr ?? true,
+    incluye_isr: apiItem.incluye_isr ?? false,
   };
 }
 
@@ -127,15 +126,15 @@ export function calculateLineaTotal(item: QuoteItem): {
   descuentoMonto: number;
 } {
   const precioOriginal = roundCurrency(item.precio_unitario);
-  const precioUnitarioEfectivo = roundCurrency(precioOriginal * (1 - item.descuento_pct / 100));
+  const descuentoMonto = roundCurrency(item.descuento);
   const lineaTotalOriginal = roundCurrency(precioOriginal * item.cantidad);
-  const lineaTotalEfectiva = roundCurrency(precioUnitarioEfectivo * item.cantidad);
-  const descuentoMonto = roundCurrency(lineaTotalOriginal - lineaTotalEfectiva);
+  const lineaTotalEfectiva = roundCurrency(lineaTotalOriginal - descuentoMonto);
+  const precioUnitarioEfectivo = item.cantidad > 0 ? roundCurrency(lineaTotalEfectiva / item.cantidad) : precioOriginal;
   
   return { precioUnitarioEfectivo, lineaTotalOriginal, lineaTotalEfectiva, descuentoMonto };
 }
 
-export function calculateQuoteTotals(items: QuoteItem[], impuestos: TaxConfig[]): CotizacionComputed {
+export function calculateQuoteTotals(items: QuoteItem[], _impuestos: TaxConfig[]): CotizacionComputed {
   let subtotal_bruto = 0;
   let total_descuentos = 0;
   let total_iva = 0;
@@ -177,12 +176,14 @@ export function createQuoteItemSnapshot(catalogItem: CatalogItem): QuoteItem {
     nombre_snapshot: catalogItem.nombre,
     cantidad: 1,
     precio_unitario: roundCurrency(catalogItem.precio_sugerido),
-    descuento_pct: 0,
+    descuento: 0,
+    subtotal_linea: roundCurrency(catalogItem.precio_sugerido),
     categoria_tag: catalogItem.categoria,
+    unidad: catalogItem.unidad || 'pz',
     notas: '',
     sort_order: 0,
     incluye_iva: true,
-    incluye_isr: true,
+    incluye_isr: false,
   };
 }
 
@@ -195,27 +196,30 @@ export function createLocalQuoteItem(name: string, precio: number): QuoteItem {
     nombre_snapshot: name,
     cantidad: 1,
     precio_unitario: roundCurrency(precio),
-    descuento_pct: 0,
+    descuento: 0,
+    subtotal_linea: roundCurrency(precio),
     categoria_tag: 'General',
+    unidad: 'pz',
     notas: '',
     sort_order: 0,
     incluye_iva: true,
-    incluye_isr: true,
+    incluye_isr: false,
   };
 }
 
 export function quoteItemToApiFormat(item: QuoteItem): Record<string, unknown> {
   return {
-    catalog_item_id: item.catalogo_id,
-    name: item.nombre,
+    catalogo_id: item.catalogo_id,
+    nombre_personalizado: item.nombre,
     nombre_snapshot: item.nombre_snapshot,
-    category: item.categoria_tag,
-    unit: 'pz',
-    unit_price: item.precio_unitario,
-    quantity: item.cantidad,
+    precio_unitario_aplicado: item.precio_unitario,
+    descuento: item.descuento,
+    cantidad: item.cantidad,
+    categoria: item.categoria_tag,
+    unidad: item.unidad,
     incluye_iva: item.incluye_iva,
     incluye_isr: item.incluye_isr,
     sort_order: item.sort_order,
-    notes: item.notas,
+    notas_item: item.notas,
   };
 }

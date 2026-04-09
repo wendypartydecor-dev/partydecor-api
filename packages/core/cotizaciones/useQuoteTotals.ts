@@ -8,24 +8,47 @@ export function formatCurrency(amount: number): string {
 }
 
 export function computeQuoteTotals(items: QuoteItem[]): QuoteTotals {
-  const subtotal = items.reduce((sum, item) => sum + item.lineTotalOriginal ?? item.lineTotal, 0);
-  const discount = items.reduce((sum, item) => {
-    if (item.discountType === 'percentage') {
-      return sum + (item.lineTotalOriginal ?? item.lineTotal) * (item.discountValue / 100);
+  let subtotal = 0;
+  let discount = 0;
+  let iva = 0;
+  let isr = 0;
+
+  for (const item of items) {
+    const lineTotalOriginal = item.unitPrice * item.quantity;
+    subtotal += lineTotalOriginal;
+
+    let discountAmount = 0;
+    switch (item.discountType) {
+      case 'percentage':
+        discountAmount = lineTotalOriginal * (item.discountValue / 100);
+        break;
+      case 'fixed':
+        discountAmount = item.discountValue * item.quantity;
+        break;
+      case 'package':
+        discountAmount = lineTotalOriginal - item.lineTotal;
+        break;
     }
-    if (item.discountType === 'fixed') {
-      return sum + item.discountValue * item.quantity;
+    discount += discountAmount;
+
+    const lineTotal = lineTotalOriginal - discountAmount;
+
+    if (item.incluyeIva) {
+      iva += lineTotal * 0.16;
     }
-    return sum;
-  }, 0);
-  const taxableAmount = subtotal - discount;
-  const tax = taxableAmount * 0.16;
-  const total = taxableAmount + tax;
+    
+    if (item.incluyeIsr) {
+      isr += lineTotal * 0.0125;
+    }
+  }
+
+  const total = subtotal - discount + iva - isr;
 
   return {
     subtotal,
     discount,
-    tax,
+    iva,
+    isr,
     total,
     itemCount: items.length,
   };

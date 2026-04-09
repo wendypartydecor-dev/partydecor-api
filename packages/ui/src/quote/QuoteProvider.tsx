@@ -7,7 +7,7 @@ import {
   type CotizacionComputed,
   type CatalogItem,
   type CotizacionApiResponse,
-  type QuoteItemApiResponse,
+  type LineaCotizacionApiResponse,
   calculateQuoteTotals,
   createQuoteItemSnapshot,
   createLocalQuoteItem,
@@ -127,7 +127,7 @@ export function QuoteProvider({
         let items: QuoteItem[] = [];
         if (itemsResponse.ok) {
           const itemsData = await itemsResponse.json();
-          items = (itemsData.items || []).map(mapApiItemToQuoteItem);
+          items = (itemsData.items || []).map((item: LineaCotizacionApiResponse) => mapApiItemToQuoteItem(item));
         }
 
         setCotizacionState({
@@ -208,7 +208,7 @@ export function QuoteProvider({
       setIsDirty(false);
       
       if (data.items) {
-        const updatedItems = data.items.map(mapApiItemToQuoteItem);
+        const updatedItems = data.items.map((item: LineaCotizacionApiResponse) => mapApiItemToQuoteItem(item));
         setCotizacionState(prev => ({
           ...prev,
           items: updatedItems,
@@ -258,10 +258,11 @@ export function QuoteProvider({
         
         const updated = { ...item, ...patch };
         
-        if ('precio_unitario' in patch || 'descuento_pct' in patch || 'cantidad' in patch) {
+        if ('precio_unitario' in patch || 'descuento' in patch || 'cantidad' in patch) {
           updated.precio_unitario = roundCurrency(updated.precio_unitario);
-          updated.descuento_pct = Math.max(0, Math.min(100, updated.descuento_pct));
+          updated.descuento = Math.max(0, updated.descuento);
           updated.cantidad = Math.max(1, Math.round(updated.cantidad));
+          updated.subtotal_linea = roundCurrency((updated.precio_unitario * updated.cantidad) - updated.descuento);
         }
         
         return updated;

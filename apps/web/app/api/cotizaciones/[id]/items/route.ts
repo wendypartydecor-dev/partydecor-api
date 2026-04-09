@@ -14,6 +14,26 @@ function createSupabaseClient(authHeader: string) {
   });
 }
 
+interface LineaCotizacionResponse {
+  id: string;
+  cotizacion_id: string;
+  catalogo_id: string | null;
+  nombre_personalizado: string;
+  nombre_snapshot: string | null;
+  precio_unitario_aplicado: number;
+  descuento: number;
+  subtotal_linea: number;
+  incluye_iva: boolean;
+  incluye_isr: boolean;
+  cantidad: number;
+  categoria: string;
+  unidad: string;
+  notas_item: string;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -28,25 +48,25 @@ export async function GET(
   try {
     const supabase = createSupabaseClient(authHeader);
 
-    console.log('[API cotizaciones items] GET for cotizacion:', cotizacionId);
+    console.log('[API cotizaciones/lineas] GET for cotizacion:', cotizacionId);
 
     const { data, error } = await supabase
-      .from('quote_items')
+      .from('lineas_cotizacion')
       .select('*')
       .eq('cotizacion_id', cotizacionId)
       .order('sort_order', { ascending: true });
 
     if (error) {
-      console.error('[API cotizaciones items] GET error:', error);
+      console.error('[API cotizaciones/lineas] GET error:', error);
       return NextResponse.json({
-        error: 'Error al obtener items',
+        error: 'Error al obtener líneas',
         details: error.message,
       }, { status: 500 });
     }
 
     return NextResponse.json({ items: data || [] });
   } catch (err) {
-    console.error('[API cotizaciones items] Unhandled error:', err);
+    console.error('[API cotizaciones/lineas] Unhandled error:', err);
     return NextResponse.json({
       error: 'Error interno',
       details: err instanceof Error ? err.message : 'Unknown'
@@ -69,51 +89,54 @@ export async function POST(
     const body = await request.json();
     const supabase = createSupabaseClient(authHeader);
 
-    console.log('[API cotizaciones items] POST for cotizacion:', cotizacionId);
-    console.log('[API cotizaciones items] Item data:', JSON.stringify(body));
+    console.log('[API cotizaciones/lineas] POST for cotizacion:', cotizacionId);
 
     const {
-      catalog_item_id,
-      name,
+      catalogo_id,
+      nombre_personalizado,
       nombre_snapshot,
-      category,
-      unit,
-      unit_price,
-      quantity,
+      precio_unitario_aplicado,
+      descuento,
+      cantidad,
+      categoria,
+      unidad,
       incluye_iva,
       incluye_isr,
       sort_order,
+      notas_item,
     } = body;
 
     const { data, error } = await supabase
-      .from('quote_items')
+      .from('lineas_cotizacion')
       .insert({
         cotizacion_id: cotizacionId,
-        catalog_item_id: catalog_item_id || null,
-        name: name || 'Nuevo item',
-        nombre_snapshot: nombre_snapshot || name || 'Nuevo item',
-        category: category || '',
-        unit: unit || 'pz',
-        unit_price: unit_price || 0,
-        quantity: quantity || 1,
+        catalogo_id: catalogo_id || null,
+        nombre_personalizado: nombre_personalizado || 'Item sin nombre',
+        nombre_snapshot: nombre_snapshot || nombre_personalizado || 'Item sin nombre',
+        precio_unitario_aplicado: precio_unitario_aplicado || 0,
+        descuento: descuento || 0,
+        cantidad: cantidad || 1,
+        categoria: categoria || '',
+        unidad: unidad || 'pz',
         incluye_iva: incluye_iva !== false,
-        incluye_isr: incluye_isr !== false,
+        incluye_isr: incluye_isr === true,
         sort_order: sort_order || 0,
+        notas_item: notas_item || '',
       })
       .select()
       .single();
 
     if (error) {
-      console.error('[API cotizaciones items] POST error:', error);
+      console.error('[API cotizaciones/lineas] POST error:', error);
       return NextResponse.json({
-        error: 'Error al agregar item',
+        error: 'Error al agregar línea',
         details: error.message,
       }, { status: 500 });
     }
 
     return NextResponse.json({ item: data, success: true });
   } catch (err) {
-    console.error('[API cotizaciones items] Unhandled error:', err);
+    console.error('[API cotizaciones/lineas] Unhandled error:', err);
     return NextResponse.json({
       error: 'Error interno',
       details: err instanceof Error ? err.message : 'Unknown'
@@ -142,25 +165,38 @@ export async function PATCH(
     const body = await request.json();
     const supabase = createSupabaseClient(authHeader);
 
-    console.log('[API cotizaciones items] PATCH item:', itemId);
+    console.log('[API cotizaciones/lineas] PATCH item:', itemId);
 
     const updateData: Record<string, unknown> = {};
     
-    if (body.name !== undefined) {
-      updateData.name = body.name;
-      updateData.nombre_snapshot = body.nombre_snapshot || body.name;
+    if (body.nombre_personalizado !== undefined) {
+      updateData.nombre_personalizado = body.nombre_personalizado;
+      updateData.nombre_snapshot = body.nombre_snapshot || body.nombre_personalizado;
     }
-    if (body.unit_price !== undefined) updateData.unit_price = body.unit_price;
-    if (body.quantity !== undefined) updateData.quantity = body.quantity;
-    if (body.incluye_iva !== undefined) updateData.incluye_iva = body.incluye_iva;
-    if (body.incluye_isr !== undefined) updateData.incluye_isr = body.incluye_isr;
-    if (body.sort_order !== undefined) updateData.sort_order = body.sort_order;
-    if (body.discount_type !== undefined) updateData.discount_type = body.discount_type;
-    if (body.discount_value !== undefined) updateData.discount_value = body.discount_value;
-    if (body.notes !== undefined) updateData.notes = body.notes;
+    if (body.precio_unitario_aplicado !== undefined) {
+      updateData.precio_unitario_aplicado = body.precio_unitario_aplicado;
+    }
+    if (body.descuento !== undefined) {
+      updateData.descuento = body.descuento;
+    }
+    if (body.cantidad !== undefined) {
+      updateData.cantidad = body.cantidad;
+    }
+    if (body.incluye_iva !== undefined) {
+      updateData.incluye_iva = body.incluye_iva;
+    }
+    if (body.incluye_isr !== undefined) {
+      updateData.incluye_isr = body.incluye_isr;
+    }
+    if (body.sort_order !== undefined) {
+      updateData.sort_order = body.sort_order;
+    }
+    if (body.notas_item !== undefined) {
+      updateData.notas_item = body.notas_item;
+    }
 
     const { data, error } = await supabase
-      .from('quote_items')
+      .from('lineas_cotizacion')
       .update(updateData)
       .eq('id', itemId)
       .eq('cotizacion_id', cotizacionId)
@@ -168,16 +204,16 @@ export async function PATCH(
       .single();
 
     if (error) {
-      console.error('[API cotizaciones items] PATCH error:', error);
+      console.error('[API cotizaciones/lineas] PATCH error:', error);
       return NextResponse.json({
-        error: 'Error al actualizar item',
+        error: 'Error al actualizar línea',
         details: error.message,
       }, { status: 500 });
     }
 
     return NextResponse.json({ item: data, success: true });
   } catch (err) {
-    console.error('[API cotizaciones items] Unhandled error:', err);
+    console.error('[API cotizaciones/lineas] Unhandled error:', err);
     return NextResponse.json({
       error: 'Error interno',
       details: err instanceof Error ? err.message : 'Unknown'
@@ -205,25 +241,25 @@ export async function DELETE(
   try {
     const supabase = createSupabaseClient(authHeader);
 
-    console.log('[API cotizaciones items] DELETE item:', itemId);
+    console.log('[API cotizaciones/lineas] DELETE item:', itemId);
 
     const { error } = await supabase
-      .from('quote_items')
+      .from('lineas_cotizacion')
       .delete()
       .eq('id', itemId)
       .eq('cotizacion_id', cotizacionId);
 
     if (error) {
-      console.error('[API cotizaciones items] DELETE error:', error);
+      console.error('[API cotizaciones/lineas] DELETE error:', error);
       return NextResponse.json({
-        error: 'Error al eliminar item',
+        error: 'Error al eliminar línea',
         details: error.message,
       }, { status: 500 });
     }
 
     return NextResponse.json({ success: true });
   } catch (err) {
-    console.error('[API cotizaciones items] Unhandled error:', err);
+    console.error('[API cotizaciones/lineas] Unhandled error:', err);
     return NextResponse.json({
       error: 'Error interno',
       details: err instanceof Error ? err.message : 'Unknown'
