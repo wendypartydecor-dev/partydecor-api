@@ -55,32 +55,35 @@ CREATE INDEX IF NOT EXISTS idx_lineas_cotizacion_cotizacion ON public.lineas_cot
 CREATE INDEX IF NOT EXISTS idx_lineas_cotizacion_sort ON public.lineas_cotizacion(cotizacion_id, sort_order);
 
 -- ============================================================================
--- SECCIÓN 3: FUNCIONES DE CÁLCULO
+-- CORRECCIÓN: Sección 3 (Funciones de cálculo) y Trigger
 -- ============================================================================
 
--- Función para calcular subtotal de línea
+-- Asegurar que la función get_jwt_tenant_id existe (de hitos anteriores)
+CREATE OR REPLACE FUNCTION public.get_jwt_tenant_id()
+RETURNS text LANGUAGE sql STABLE AS $$
+  SELECT current_setting('request.jwt.claims', true)::jsonb ->> 'tenant_id';
+$$;
+
+-- Renombrar para compatibilidad con el código (si se prefiere get_tenant_id)
+CREATE OR REPLACE FUNCTION public.get_tenant_id()
+RETURNS text LANGUAGE sql STABLE AS $$
+  SELECT public.get_jwt_tenant_id();
+$$;
+
+-- Función para calcular subtotal de línea (ya está bien)
 CREATE OR REPLACE FUNCTION public.calcular_subtotal_linea()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 BEGIN
   NEW.subtotal_linea := (NEW.precio_unitario_aplicado * NEW.cantidad) - NEW.descuento;
-  
-  -- Copiar nombre_snapshot si no está establecido
   IF NEW.nombre_snapshot IS NULL THEN
     NEW.nombre_snapshot := NEW.nombre_personalizado;
   END IF;
-  
   NEW.updated_at := now();
   RETURN NEW;
 END;
 $$;
 
--- Trigger para calcular subtotal
-DROP TRIGGER IF EXISTS trigger_calcular_subtotal_linea ON public.lineas_cotizacion;
-CREATE TRIGGER trigger_calcular_subtotal_linea
-  BEFORE INSERT OR UPDATE OF precio_unitario_aplicado, descuento, cantidad ON public.lineas_cotizacion
-  FOR EACH ROW EXECUTE FUNCTION public.calcular_subtotal_linea();
-
--- Función para recalcular totales de cotización
+-- Función para recalcular totales de cotización (acepta UUID)
 CREATE OR REPLACE FUNCTION public.recalcular_totales_cotizacion(p_cotizacion_id uuid)
 RETURNS void LANGUAGE plpgsql SECURITY DEFINER AS $$
 DECLARE
@@ -98,14 +101,12 @@ BEGIN
     FROM public.lineas_cotizacion lc
     JOIN public.cotizaciones c ON lc.cotizacion_id = c.id
     WHERE lc.cotizacion_id = p_cotizacion_id
-      AND c.tenant_id = public.get_tenant_id()
+      AND c.tenant_id = public.get_jwt_tenant_id()   -- usar función correcta
   LOOP
     v_sub := v_sub + rec.subtotal_linea;
-    
     IF rec.incluye_iva THEN
       v_iva_total := v_iva_total + (rec.subtotal_linea * 0.16);
     END IF;
-    
     IF rec.incluye_isr THEN
       v_isr_total := v_isr_total + (rec.subtotal_linea * 0.0125);
     END IF;
@@ -123,12 +124,44 @@ BEGIN
 END;
 $$;
 
--- Trigger para refrescar totales después de cambios en líneas
+-- Función de trigger que envuelve recalcular_totales_cotizacion
+CREATE OR REPLACE FUNCTION public.trigger_refresh_cotizacion_totals()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  -- Determinar el cotizacion_id afectado
+  IF TG_OP = 'DELETE' THEN
+    PERFORM public.recalcular_totales_cotizacion(OLD.cotizacion_id);
+  ELSE
+    PERFORM public.recalcular_totales_cotizacion(NEW.cotizacion_id);
+  END IF;
+  RETURN COALESCE(NEW, OLD);
+END;
+$$;
+
+-- Eliminar el trigger mal definido si existe
 DROP TRIGGER IF EXISTS trigger_refresh_cotizacion_totals ON public.lineas_cotizacion;
+
+-- Crear el trigger correcto
 CREATE TRIGGER trigger_refresh_cotizacion_totals
   AFTER INSERT OR UPDATE OR DELETE ON public.lineas_cotizacion
-  FOR EACH ROW EXECUTE FUNCTION public.recalcular_totales_cotizacion(NEW.cotizacion_id);
+  FOR EACH ROW
+  EXECUTE FUNCTION public.trigger_refresh_cotizacion_totals();
 
+-- También refrescar cuando cambien los porcentajes en la cotización
+CREATE OR REPLACE FUNCTION public.trigger_refresh_on_percent_change()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+  PERFORM public.recalcular_totales_cotizacion(NEW.id);
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trigger_refresh_on_percent_change ON public.cotizaciones;
+CREATE TRIGGER trigger_refresh_on_percent_change
+  AFTER UPDATE OF iva_porcentaje, isr_porcentaje ON public.cotizaciones
+  FOR EACH ROW
+  EXECUTE FUNCTION public.trigger_refresh_on_percent_change();
+  
 -- ============================================================================
 -- SECCIÓN 4: FUNCIÓN RPC PARA GUARDAR COTIZACIÓN COMPLETA (UPSERT)
 -- ============================================================================
@@ -148,14 +181,14 @@ BEGIN
   -- Verificar si existe cotización en borrador para este evento
   SELECT COUNT(*), COALESCE(MAX(id), NULL) INTO v_existing_count, v_cotizacion_id
   FROM public.cotizaciones
-  WHERE evento_id = p_evento_id AND tenant_id = p_tenant_id AND estado = 'borrador';
+  WHERE evento_id = p_evento_id AND tenant_id = p_tenant_id AND status = 'draft';
   
   IF v_existing_count = 0 THEN
     -- Crear nueva cotización
     INSERT INTO public.cotizaciones (
-      evento_id, tenant_id, estado, subtotal, total, anticipo, saldo, notas
+      evento_id, tenant_id, status, subtotal, total, anticipo, saldo, notes
     ) VALUES (
-      p_evento_id, p_tenant_id, 'borrador', 0, 0, 0, 0, ''
+      p_evento_id, p_tenant_id, 'draft', 0, 0, 0, 0, ''
     )
     RETURNING id INTO v_cotizacion_id;
   END IF;
