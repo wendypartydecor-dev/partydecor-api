@@ -181,6 +181,12 @@ export function QuoteProvider({
 
       const itemsPayload = cotizacion.items.map(quoteItemToApiFormat);
 
+      console.log('[QuoteProvider] Payload a guardar:', JSON.stringify({
+        evento_id: cotizacion.evento_id,
+        tenant_id: cotizacion.tenant_id,
+        items: itemsPayload,
+      }, null, 2));
+
       const response = await fetch('/api/cotizaciones', {
         method: 'POST',
         headers: {

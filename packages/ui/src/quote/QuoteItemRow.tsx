@@ -43,13 +43,17 @@ export function QuoteItemRow({ item, index, currency }: QuoteItemRowProps) {
   }, [item.id, item.cantidad, updateItem]);
 
   const handleDescuentoChange = useCallback((delta: number) => {
-    const maxDescuento = item.precio_unitario * item.cantidad;
-    const newDescuento = Math.max(0, Math.min(maxDescuento, item.descuento + delta));
-    updateItem(item.id, { descuento: roundCurrency(newDescuento) });
+    const precioTotal = item.precio_unitario * item.cantidad;
+    const descuentoPorcentaje = precioTotal > 0 
+      ? (item.descuento / precioTotal) * 100 
+      : 0;
+    const newPorcentaje = Math.max(0, Math.min(100, descuentoPorcentaje + delta));
+    const newDescuento = roundCurrency(precioTotal * (newPorcentaje / 100));
+    updateItem(item.id, { descuento: newDescuento });
   }, [item.id, item.descuento, item.precio_unitario, item.cantidad, updateItem]);
 
-  const descuentoPorcentaje = item.precio_unitario > 0 
-    ? Math.round((item.descuento / item.precio_unitario / item.cantidad) * 100) 
+  const descuentoPorcentaje = item.precio_unitario > 0 && item.cantidad > 0
+    ? Math.round((item.descuento / (item.precio_unitario * item.cantidad)) * 100)
     : 0;
 
   return (
