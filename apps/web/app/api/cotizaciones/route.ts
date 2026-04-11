@@ -84,7 +84,21 @@ export async function POST(request: NextRequest) {
 
     console.log('[API cotizaciones] POST for evento:', evento_id, 'tenant:', tenant_id);
     console.log('[API cotizaciones] Items count:', items?.length || 0);
-    console.log('[API cotizaciones] Tax percentages:', { iva: iva_porcentaje, isr: isr_porcentaje });
+
+    const { data: empresaData, error: empresaError } = await supabase
+      .from('empresas')
+      .select('iva_default, isr_default')
+      .eq('id', tenant_id)
+      .single();
+
+    if (empresaError) {
+      console.warn('[API cotizaciones] Error fetching empresa, using defaults:', empresaError);
+    }
+
+    const ivaPorcentajeFinal = empresaData?.iva_default ?? iva_porcentaje ?? 16;
+    const isrPorcentajeFinal = empresaData?.isr_default ?? isr_porcentaje ?? 1.25;
+
+    console.log('[API cotizaciones] Tax percentages from empresa:', { iva: ivaPorcentajeFinal, isr: isrPorcentajeFinal });
 
     const sanitizedItems = (items || []).map((item: Record<string, unknown>) => ({
       catalogo_id: item.catalogo_id ?? null,
@@ -93,6 +107,7 @@ export async function POST(request: NextRequest) {
       precio_unitario_aplicado: item.precio_unitario_aplicado ?? 0,
       descuento: item.descuento ?? 0,
       cantidad: item.cantidad ?? 1,
+      categoria: item.categoria ?? '',
       unidad: item.unidad ?? 'pz',
       incluye_iva: item.incluye_iva ?? true,
       incluye_isr: item.incluye_isr ?? false,
@@ -104,12 +119,15 @@ export async function POST(request: NextRequest) {
       p_evento_id: evento_id,
       p_tenant_id: tenant_id,
       p_items: sanitizedItems,
-      p_iva_porcentaje: iva_porcentaje ?? 16,
-      p_isr_porcentaje: isr_porcentaje ?? 1.25,
+      p_iva_porcentaje: ivaPorcentajeFinal,
+      p_isr_porcentaje: isrPorcentajeFinal,
     });
 
     if (error) {
       console.error('[API cotizaciones] POST RPC error:', error);
+      if (error.message?.includes('Tenant no autorizado')) {
+        return NextResponse.json({ error: 'No tienes permiso para esta empresa' }, { status: 403 });
+      }
       return NextResponse.json({
         error: 'Error al guardar cotización',
         details: error.message,
@@ -118,6 +136,11 @@ export async function POST(request: NextRequest) {
     }
 
     const cotizacionId = data as string;
+    if (!cotizacionId || typeof cotizacionId !== 'string' || cotizacionId.length !== 36) {
+      console.error('[API cotizaciones] Invalid UUID returned:', cotizacionId);
+      return NextResponse.json({ error: 'ID de cotización inválido generado por el servidor' }, { status: 500 });
+    }
+
     console.log('[API cotizaciones] Saved with ID:', cotizacionId);
 
     const { data: savedCotizacion } = await supabase
