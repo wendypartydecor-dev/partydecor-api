@@ -130,9 +130,9 @@ export function calculateLineaTotal(item: QuoteItem): {
 } {
   const precioOriginal = roundCurrency(item.precio_unitario);
   const lineaTotalOriginal = roundCurrency(precioOriginal * item.cantidad);
-  const descuentoMonto = roundCurrency(Math.max(0, item.descuento));
-  const precioConDescuento = roundCurrency(precioOriginal - descuentoMonto);
-  const lineaTotalEfectiva = roundCurrency(precioConDescuento * item.cantidad);
+  const descuentoPorcentaje = Math.min(100, Math.max(0, item.descuento));
+  const descuentoMonto = roundCurrency(lineaTotalOriginal * (descuentoPorcentaje / 100));
+  const lineaTotalEfectiva = roundCurrency(lineaTotalOriginal - descuentoMonto);
   const precioUnitarioEfectivo = item.cantidad > 0 ? roundCurrency(lineaTotalEfectiva / item.cantidad) : precioOriginal;
   
   return { precioUnitarioEfectivo, lineaTotalOriginal, lineaTotalEfectiva, descuentoMonto };

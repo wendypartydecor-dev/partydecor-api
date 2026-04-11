@@ -266,9 +266,10 @@ export function QuoteProvider({
         
         if ('precio_unitario' in patch || 'descuento' in patch || 'cantidad' in patch) {
           updated.precio_unitario = roundCurrency(updated.precio_unitario);
-          updated.descuento = Math.max(0, updated.descuento);
+          updated.descuento = Math.min(100, Math.max(0, updated.descuento));
           updated.cantidad = Math.max(1, Math.round(updated.cantidad));
-          updated.subtotal_linea = roundCurrency((updated.precio_unitario * updated.cantidad) - updated.descuento);
+          const bruto = roundCurrency(updated.precio_unitario * updated.cantidad);
+          updated.subtotal_linea = roundCurrency(bruto * (1 - updated.descuento / 100));
         }
         
         return updated;
